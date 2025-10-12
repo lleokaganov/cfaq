@@ -13,7 +13,7 @@ git status
 
 #exit
 
-git commit -s -m "feature: add ALL"
+git commit -s -m "fix: README.md"
 git push origin main
 # feature/${NAME}
 
