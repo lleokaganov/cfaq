@@ -1,0 +1,18 @@
+# callback когда WIFI меняет статус
+
+if {WIFI.event} == 3 {
+    echo STAMODE_GOT_IP: Получили IP={IP}
+    playip
+    exit
+}
+
+if {WIFI.event} == 1 echo WIFI.event {WIFI.event} - STAMODE_DISCONNECTED
+else if {WIFI.event} == 0 echo WIFI.event {WIFI.event} - STAMODE_CONNECTED
+else if {WIFI.event} == 2 echo WIFI.event {WIFI.event} - STAMODE_AUTHMODE_CHANGE
+else if {WIFI.event} == 4 echo WIFI.event {WIFI.event} - STAMODE_DHCP_TIMEOUT
+else if {WIFI.event} == 5 echo WIFI.event {WIFI.event} - SOFTAPMODE_STACONNECTED
+else if {WIFI.event} == 6 echo WIFI.event {WIFI.event} - SOFTAPMODE_STADISCONNECTED
+else if {WIFI.event} == 7 echo WIFI.event {WIFI.event} - SOFTAPMODE_PROBEREQRECVED
+else if {WIFI.event} == 8 echo WIFI.event {WIFI.event} - WIFI_EVENT_MAX
+else echo WIFI.event {WIFI.event} - unknown event
+play c

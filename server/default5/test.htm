@@ -1,0 +1,281 @@
+<!DOCTYPE html><html>
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<script type='text/javascript' language='JavaScript' src='/main.js'></script>
+<link rel="stylesheet" href="/sys.css">
+
+
+<style>
+
+.zml,.cY {
+margin:1px;
+padding:4px;
+background-color:white;
+border-radius:100%;
+border:1px solid#ccc;
+font-size: 15px;
+width: 15px;
+text-align: center;
+height: 15px;
+}
+.zml { position:absolute; z-index:120; }
+
+.Disp {
+  padding:10px 20px 10px 20px;
+  margin:10px 20px 10px 20px;
+  text-align:center;
+  position:absolute;
+  width:100px;
+  height:150px;
+  top:-100px;
+  font-size:100px;
+  display: inline;
+  vertical-align: bottom;
+  z-index: 5;
+  background-color: white;
+}
+
+.Disp DIV { position:absolute; bottom:15px; width: 100px; text-align: center; font-size:20px; font-weight:bold; }
+
+</style>
+
+<title>Hardware test panel</title>
+
+<script>
+/*
+function grice(x,y){ LINX+=x; LINY+=y;
+    idd('gpio').style.top=LINY+'px'; idd('gpio').style.left=LINX+'px';
+    zabil('buka',"'gpio':["+LINY+","+LINX+"],");
+}
+
+// <i style='position:absolute;z-index:120;top:10px;left:10px;' id='gpio' class=e_ledyellow></i>
+
+<p><input type=button value="|" onclick="grice(0,-1)"> <input type=button value="||" onclick="grice(0,-10)">
+
+<p><input type=button value="<==" onclick="grice(-10,0)"> <input type=button value="<--" onclick="grice(-1,0)">
+      <input type=button value="OK" onclick="zabil('buka2',vzyal('buka2')+vzyal('buka'))">
+      <input type=button value="-->" onclick="grice(+1,0)"> <input type=button value="==>" onclick="grice(+10,0)">
+<p><input type=button value="|" onclick="grice(0,+1)"> <input type=button value="||" onclick="grice(0,+10)">
+<p><div id=buka></div>
+<p><div id=buka2></div>
+</center>
+*/
+
+LINX=0; LINY=0;
+
+var ESP32_text="\
+<p><a href='https://diytech.ru/projects/spravochnik-po-raspinovke-esp32-kakie-vyvody-gpio-sleduet-ispolzovat'>link</a>\
+<dd>0 - не соединять с землей, иначе BOOT! outPWM\
+<dd>1 TX\
+<dd>2 LED?\
+<dd>3 RX\
+<dd>4 13 16 17 18 19 21 22 23 24 25 26 27 32 33 - OK\
+<dd>12 - не подтягивать вверх, иначе не грузится!\
+<dd>5 14 15 outPWM\
+<dd>34 35 36 39 - input only!\
+<p>Ёмкостные: 0 2 4 12 13 14 15 27 32 33\
+<p>АЦП 18 бит: 0 2 12 13 14 15 25 26 27 32 33 34 35 36 37 38\
+<p>ЦАП: 25 26\
+<p>допустимый ток 40 Ма\
+";
+
+var ESP8266_text="\
+<p>ESP8266 имеет 15 полноценных GPIO выходов, 6 из которых заняты микросхемой flash памяти.\
+<br>GPIO 0,1,2,3,15 имеют ограничения при использовании: - не рекомендуется их использовать для сухого контакта, кнопок и прерываний:\
+<dd>GPIO 0 (FLASH), 2 (LED) - не должны быть подтянуты к минусу при старте модуля.\
+<dd>GPIO 15 - в момент старта должен подтянут к минусу через резистор 10к.\
+<dd>GPIO 1 - TXD, 3 - RXD\
+<br>GPIO16 - только на OUTPUT (или для пробуждения, если подключить к RESET)\
+<br>\
+<p>Рекомендуемые для NFC-читалки:\
+<br>RST     = GPIO5\
+<br>SDA(SS) = GPIO4\
+<br>MOSI    = GPIO13\
+<br>MISO    = GPIO12\
+<br>SCK     = GPIO14\
+<br>\
+<p>В моем фреймворке рекомендуется:\
+<br>2 - led и подключение лампочек, все равно лампа\
+<br>3 - звук, все равно RX пропадает, а так прошивку тоже слышно\
+";
+
+mesta={
+
+'esp12': { w:464,h:466,text:ESP8266_text,name:'ESP-12',
+file:'http://lleo.me/ESP8266/Files/esp-esp12.jpg',
+'gpio15':[158,97],
+'gpio2':[185,97],
+'gpio0':[210,97],
+'gpio4':[236,97],
+'gpio5':[261,97],
+'gpio3':[287,97],
+'gpio1':[313,97],
+'gpio13':[160,351],
+'gpio12':[186,351],
+'gpio14':[211,351],
+'gpio16':[237,351],
+'gpioA0':[288,351]
+},
+
+'node': { w:981,h:625,text:ESP8266_text,name:'Node MCU',
+file:'http://lleo.me/ESP8266/Files/esp-node.jpg',
+'gpioA0':[117,275],
+// 'gpio10':[194,275],
+// 'gpio9':[226,275],
+'gpio16':[98,603],
+'gpio5':[126,603],
+'gpio4':[152,603],
+'gpio0':[180,603],
+'gpio2':[209,603],
+'gpio14':[289,603],
+'gpio12':[315,603],
+'gpio13':[343,603],
+'gpio15':[369,603],
+'gpio3':[396,603],
+'gpio1':[421,603]
+},
+
+'d1mini': { w:865,h:500,text:ESP8266_text,name:'D1 mini',
+file:'http://lleo.me/ESP8266/Files/esp-d1mini.jpg',
+'gpioA0':[138,212],
+'gpio16':[176,212],
+'gpio14':[213,212],
+'gpio12':[249,212],
+'gpio13':[284,212],
+'gpio15':[321,212],
+'gpio1':[101,625],
+'gpio3':[138,625],
+'gpio5':[176,625],
+'gpio4':[213,625],
+'gpio0':[249,625],
+'gpio2':[286,625]
+},
+
+
+'ESP-WROOM-32': { w:1401,h:715,dy:-8,dx:-7,text:ESP32_text,name:'ESP-WROOM-32',
+file:'http://lleo.me/ESP8266/Files/ESP-WROOM-32.jpg',
+func: function(){
+    o="<div class='Disp' style='left:0px'>&#127777;<div><TT id='temp_sensor'></TT>&#176;C</div></div>";
+    o+="<div class='Disp' style='left:140px'>&#129522; <div id='hall_sensor'></div></div>";
+    // &#128225; &#128752; &#128251;
+    zabil('karta',vzyal('karta')+o);
+},
+func1s: function(){ AJ("echo temp_sensor={temp_sensor}@@@hall_sensor={hall_sensor}",function(s){ // salert(s,2000);
+	s=s.split('@@@'); for(var i in s) {	var l=s[i].split('='); if(idd(c(l[0]))) zabil(c(l[0]),c(l[1])); }
+     });
+},
+//'GND   ':[164,498],
+//'3.3   ':[190,498],
+//'___   ':[218,498],
+'gpio36':[245-1,498],
+'gpio39':[272-1,498],
+'gpio34':[299-1,498],
+'gpio35':[326-2,498],
+'gpio32':[353-2,498],
+'gpio33':[380-3,498],
+'gpio25':[407-3,498],
+'gpio26':[434-3,498],
+'gpio27':[461-4,498],
+'gpio14':[488-5,498],
+'gpio12':[515-5,498],
+//'GND'   :[548,564],
+'gpio13':[548,594],
+///'gpio9' :[548,623],
+///'gpio10':[548,653],
+///'gpio11':[548,682],
+///'gpio6' :[548,711],
+///'gpio7' :[548,741],
+///'gpio8' :[548,771],
+'gpio15':[548,800],
+'gpio2' :[548,830],
+//' GND  ':[164,898-2],
+'gpio23':[190,898-2],
+'gpio22':[219,898-2],
+'gpio1' :[245-1,898-2],
+'gpio3' :[272-1,898-2],
+'gpio21':[299-1,898-2],
+//' NC ':[326-2,898-2],
+'gpio19':[353-2,898-2],
+'gpio18':[380-3,898-2],
+'gpio5' :[407-3,898-2],
+'gpio17':[434-3,898-2],
+'gpio16':[461-4,898-2],
+'gpio4' :[488-5,898-2],
+'gpio0' :[515-5,898-2]
+},
+
+
+};
+
+
+function chgpio(e){ var q,s,pin=e.id.replace(/^gpio/,''),c=e.innerHTML;
+    if(c==vzyal('X_in')) q='1';
+    else if(c==vzyal('X_1')) q='0';
+    else if(c==vzyal('X_0')) q='tone';
+    else if(c==vzyal('X_tone')) q='pwm';
+    else if(c==vzyal('X_pwm')) q='in';
+    else return alert('error');
+    s=vzyal('Y_'+q).replace(/\{pin\}/g,pin).replace(/\s*\;\s*/g,'\n');
+    // salert(s,500);
+    e.innerHTML=vzyal('X_'+q);
+    AJ(s);
+}
+
+var LAST_L=false;
+
+function kartainit(l){
+    if(!l) {
+	var o="<option value=''>---</option>";
+	for(var i in mesta) o+="<option value='"+i+"'>"+mesta[i].name+"</option>";
+	zabil('menuesp',"<select id='typesys' onchange='kartainit(this.value)'>"+o+"</select>");
+        l=f5_read('ESP_select'); if(!l) return;
+	idd('typesys').value=l;
+    }
+    f5_save('ESP_select',l);
+    LAST_L=l;
+    var m=mesta[l];
+    zabil('esptext',m.text);
+    idd('tabesptext').width=Math.min(650,getWinW()*0.9);
+    var o="<img id='kartaimg' src='"+m.file+"' onerror=\"this.src=this.src.replace(/^.+(\/[^\/]+)$/g,'$1')\">";
+    idd('karta').style.width=m.w+'px';
+    idd('karta').style.height=m.h+'px';
+    var ls=vzyal('X_in');
+    for(var i in m) if(i.indexOf('gpio')==0) {
+	    var y=m[i][0]-4,x=m[i][1]-4;
+	    if(m.dx) x+=m.dx;
+	    if(m.dy) y+=m.dy;
+	    o+="<div title='"+i+"' style='top:"+y+"px;left:"+x+"px;' id='"+i+"' class='zml mv us in' onclick='chgpio(this)'>"+ls+"</div>";
+    }
+    zabil('karta',o);
+    if(m.func) m.func();
+}
+
+setInterval(function(){ if(LAST_L && mesta[LAST_L] && mesta[LAST_L].func1s) mesta[LAST_L].func1s(); },1000);
+
+</script>
+
+</head><body onload='kartainit()' style='text-align:left'>
+
+<center><h1>ТЕСТОВАЯ ПАНЕЛЬ</h1></center>
+
+
+
+
+<center><div id='menuesp'></div></center>
+
+<p><center><div id='karta' style='width:1px;height:1px;display:block;position:relative;align:left;padding:0;magrin:0;text-align:left;'></div></center>
+
+
+<center><table><td><tt>
+<div><div class='cY in' id='X_in'>&#128242;</div> - <span id='Y_in'>pinmode {pin} INPUT</span></div>
+<div><div class='cY in' id='X_1'><span style='color:green;font-weight:bold'>1</span></div> - <span id='Y_1'>pinmode {pin} OUTPUT ; pin {pin} 1</span></div>
+<div><div class='cY in' id='X_0'><span style='color:red;font-weight:bold'>0</span></div> - <span id='Y_0'>pinmode {pin} OUTPUT ; pin {pin} 0</span></div>
+<div><div class='cY in' id='X_tone'>&#127925;</div> - <span id='Y_tone'>pinmode {pin} OUTPUT ; tone {pin} 440</span></div>
+<div><div class='cY in' id='X_pwm'>&#128246;</div> - <span id='Y_pwm'>pinmode {pin} OUTPUT ; pwm {pin} 600</span></div>
+</tt></td></table></center>
+
+<center><table id='tabesptext'><td><pre id='esptext' class='br' style='white-space:pre-wrap'></pre></td></table></center>
+
+</body></html>

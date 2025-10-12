@@ -1,0 +1,87 @@
+  ____ _     _           ___        __
+ / ___| |__ (_)_ __     |_ _|_ __  / _| ___
+| |   | '_ \| | '_ \     | || '_ \| |_ / _ \
+| |___| | | | | |_) |    | || | | |  _| (_) |
+ \____|_| |_|_| .__/    |___|_| |_|_|  \___/
+              |_|
+
+== ID ==
+
+ESP_TYPE: {ESP_TYPE}
+VER: {VER}
+VERNAME: {VERNAME}
+ID: {chip}-{FlashChipId}
+UnixTime: {UnixTime}
+Hour: {Hour}
+Minute: {Minute}
+Second: {Second}
+
+== LOOP ==
+{LOOP}
+
+== SET ==
+{SET}
+
+== gpio ==
+gpio0: {gpio0}
+gpio1: {gpio1}
+gpio2: {gpio2}
+gpio3: {gpio3}
+gpio4: {gpio4}
+gpio5: {gpio5}
+gpio12: {gpio12}
+gpio13: {gpio13}
+gpio14: {gpio14}
+gpio15: {gpio15}
+gpio16: {gpio16}
+gpioA0: {gpioA0}
+
+== WI-FI ==
+ip: {ip}
+ip_mask: {ip_mask}
+ip_gateway: {ip_gateway}
+macAddress: {macAddress}
+ip_connected: {ip_connected}
+ip_autoconnect: {ip_autoconnect}
+
+== SERVER ==
+ip_dns: {ip_dns}
+ip_hostname: {ip_hostname}
+ip_status: {ip_status}
+ip_ssid: {ip_ssid}
+ip_psk: {ip_psk}
+ip_bssid: {ip_bssid}
+ip_rssi: {ip_rssi}
+softAPIP: {softAPIP}
+softAPmacAddressl: {softAPmacAddress}
+
+== System ==
+FreeHeap: {FreeHeap}
+FreeSketchSpace: {FreeSketchSpace}
+SketchSize: {SketchSize}
+chip: {chip}
+FlashChipId: {FlashChipId}
+FlashChipSize: {FlashChipSize}
+FlashChipRealSize: {FlashChipRealSize}
+FlashChipSpeed: {FlashChipSpeed}
+cycles: {cycles}
+CoreVersion: {CoreVersion}
+FullVersion: {FullVersion}
+BootVersion: {BootVersion}
+BootMode: {BootMode}
+CpuFreq: {CpuFreq}
+FlashChipSizeByChipId: {FlashChipSizeByChipId}
+getSketchMD5: {getSketchMD5}
+ResetReason: {ResetReason}
+ResetInfo: {ResetInfo}
+flashmode: {flashmode}
+vcc: {vcc}
+
+SPIFFStotal: {SPIFFStotal}
+SPIFFSused: {SPIFFSused}
+SPIFFSfree: {SPIFFSfree}
+Files: {Files}
+Files_count: {Files_count}
+
+wifi_last.txt: {FILE:wifi_last.txt}
+{LOOP:file}

@@ -1,0 +1,2 @@
+# stoplist for upgrade
+/stoplist.txt

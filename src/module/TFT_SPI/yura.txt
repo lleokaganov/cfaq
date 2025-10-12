@@ -1,0 +1,51 @@
+Yura.com
+
+/* Internal LCD Voltage generator settings */
+ ST7789_WriteCommand(0XB7); // Gate Control
+  ST7789_WriteSmallData(0x00); // Default value 
+ ST7789_WriteCommand(0xBB); // VCOM setting
+  ST7789_WriteSmallData(0x3F); // 0.725v (default 0.75v for 0x20)
+ ST7789_WriteCommand(0xC0); // LCMCTRL 
+  ST7789_WriteSmallData(0x2C); // Default value 
+ ST7789_WriteCommand(0xC2); // VDV and VRH command Enable
+  ST7789_WriteSmallData(0x01); // Default value
+ ST7789_WriteCommand(0xC3); // VRH set
+  ST7789_WriteSmallData(0x0B); // +-4.45v (defalut +-4.1v for 0x0B) 
+ ST7789_WriteCommand(0xC4); // VDV set
+  ST7789_WriteSmallData(0x3F); // Default value
+ ST7789_WriteCommand(0xC5); // VCMOFSET  set
+  ST7789_WriteSmallData(0x3F); // Default value 
+ ST7789_WriteCommand(0xC6); // Frame rate control in normal mode
+  ST7789_WriteSmallData(0x0F); // Default value (60HZ) 
+ ST7789_WriteCommand(0xD0); // Power control
+  ST7789_WriteSmallData(0xA4); // Default value
+ ST7789_WriteSmallData(0xA1); // Default value
+
+
+# Gate Control Default value
+tft.sendCommand 0XB7 0x00
+
+# VCOM setting 0.725v (default 0.75v for 0x20)
+tft.sendCommand 0xBB 0x3F
+
+# LCMCTRL Default value
+tft.sendCommand 0xC0 0x2C
+
+# VDV and VRH command Enable Default value
+tft.sendCommand 0xC2 0x01
+
+# VRH set +-4.45v (defalut +-4.1v for 0x0B)
+tft.sendCommand 0xC3 0x0B
+
+# VDV set Default value
+tft.sendCommand 0xC4 0x3F
+
+# VCMOFSET set Default value 
+tft.sendCommand 0xC5 0x3F
+
+# Frame rate control in normal mode Default value (60HZ)
+tft.sendCommand 0xC6 0x0F
+
+# Power control Default value
+tft.sendCommand 0xD0 0xA4 0xA1
+

@@ -1,0 +1,478 @@
+<!DOCTYPE html><html>
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<script type='text/javascript' language='JavaScript' src='main.js'></script>
+<link rel="stylesheet" href="/sys.css">
+
+<title>A0 MONITOR</title>
+<style>
+RINPUT {padding:20px;}
+#er {color:red;}
+
+.a0sel {display:inline-block;padding:5px;border-radius:10px;}
+.a0in { width:15px; font-size:10px; padding:0; margin:0; }
+</style>
+
+<script type='text/javascript' src='http://lleo.me/extended/rg.js'></script>
+
+<script>
+
+var line=false;
+
+LIGHT_FLAG = 0;
+
+function clean(id){ if(idd(id)) setTimeout("var s=idd('"+id+"');if(s)s.parentNode.removeChild(s);",40); }
+function idd(id){ return typeof(document.getElementById(id))=='undefined'?false:document.getElementById(id); }
+function lidie(s){ var e=idd('buka'); e.innerHTML=e.innerHTML+s; }
+
+function printmas(){ var s0=s1=s2='<p>',p=line.originalData,i; for(i in p[0]) { s0+=p[0][i]+','; s1+=p[1][i]+','; s2+=p[2][i]+','; } lidie('<hr>'+s0+s1+s2+'<hr>'); }
+
+function printmas1(){ if(!line) return; var k50=0,p=line.originalData,i,k=0; for(i in p[0]) { if(++k<=50) k50+=1*p[0][i]; else break; } zabil('datka',Math.floor(k50/50)); } // >
+
+setInterval("printmas1()",500);
+
+LASTAJ=0;
+
+function RG_init(){
+
+    NBUF=0; AJ("echo {NBUF}",function(s){x=1*s; if(!x) alert("Error NBUF: "+s); NBUF=x;});
+    GRAF_ON = (idd('GRAFGO').checked ? 1:0 );
+    GRAFMODE=[];
+    GRAFMODE_MUL=[];
+    GRAFMODE_ADD=[];
+    for(var i=0;i<3;i++) { // >
+	GRAFMODE[i]=idd('GRAFMODE'+i).value;
+	GRAFMODE_MUL[i]=idd('GRAFMUL'+i).value;
+	GRAFMODE_ADD[i]=idd('GRAFADD'+i).value;
+    }
+
+
+    line=new RGraph.SVG.Line({id:'rg',
+    data:[
+	    RGraph.SVG.arrayFill({array:[],value:0,length:300}),
+	    RGraph.SVG.arrayFill({array:[],value:0,length:300}),
+	    RGraph.SVG.arrayFill({array:[],value:0,length:300}),
+	    RGraph.SVG.arrayFill({array:[],value:0,length:300})
+    ],options: {
+//	gutterLeft:40,
+gutterTop:8,
+gutterBottom:10,
+gutterLeft:40,
+gutterRight:20,
+
+xaxis: false,
+yaxis: false,
+
+	yaxisMax:1024,
+	yaxisMin:0,
+	backgroundGridVlinesCount:100,
+	backgroundGridHlinesCount:50,
+	filled:[false,false,false,false],
+	colors:['#c00','#00c','#0c0','#0c8'],
+	linewidth:3,
+	filledColors:['rgba(255,0,0,0.25)','rgba(0,0,255,0.25)','rgba(0,255,0,0.25)','rgba(0,255,128,0.25)'],
+	shadow:true,
+
+    textSize:'8px',
+    attribution:false
+
+    }}).draw();
+
+    grafonoff(idd('GRAFGO').checked);
+}
+
+var pinpin={
+    '0': 0b0000000000100000,
+    '1': 0b0000000001000000,
+    '2': 0b0000000010000000,
+    '3': 0b0000000100000000,
+    '4': 0b0000001000000000,
+    '5': 0b0000010000000000,
+    '12': 0b0000100000000000,
+    '13': 0b0001000000000000,
+    '14': 0b0010000000000000,
+    '15': 0b0100000000000000,
+    '16': 0b1000000000000000
+};
+
+
+function DESHIFROVKA(s) {
+var s=s.replace(/[^01]+/g,'');
+var o=""; var i=0;
+
+function nextc(){ while(1) { if(i>=s.length) return ""; var c=s[i++]; if(c=="0" || c=="1") return c; } }
+
+ while(i < s.length ) {
+   var byte=0;
+   for(var j=0;j<7;j++) {
+     var c=nextc(); if(c=="") break;
+     if(c == '1') byte += (1 << j);
+   }
+   o+=String.fromCharCode(byte);
+ }
+return o;
+} // >
+
+
+var LAST=0,LO=0,HI=0;
+var pusk=0;
+function OBRI(x) {
+    var ret="";
+    if( x > 620 ) {
+     if(LAST==0 && LO <12 && HI < 4) ret=(LO<4?"0":"1"); // >
+     HI++; LO=0; LAST=1;
+    } else { LO++; HI=0; LAST=0; }
+
+    if(ret!="") { zabil('bukan',vzyal('bukan')+ret); pusk=0; }
+    else {
+	if(pusk++ == 20) {
+	    var o=vzyal('bukan').split("<br>");
+	    zabil('bukan',vzyal('bukan')+"<br>");
+	    o=o[o.length-1];
+	    if( o.length ) { var oo=DESHIFROVKA(o); idie("<div style='font-size:100px'>"+oo+"</div>"); }
+	}
+    }
+
+    return ret;
+}
+
+
+
+function redata(dat,i) { var x,n=GRAFMODE[i];
+    if(n=='no') x=false;
+    else {
+	if(n=='A0') {
+		x = dat[0];
+		if(LIGHT_FLAG) OBRI(x);
+	}
+	else if(n=='FLT') x = dat[1] & 0b11111;
+	else if(n=='num') x = dat[2];
+	else x = ( dat[1] & pinpin[(1*n)] ? 1 : 0 );
+
+	x = Math.min(1024, (x*GRAFMODE_MUL[i] + 1*GRAFMODE_ADD[i]) );
+    }
+
+    line.originalData[i].unshift(x);
+    line.originalData[i].pop();
+}
+
+
+function AJME(n){ if(!GRAF_ON || STOPALL==1) return;
+    LASTAJ=(LASTAJ+n) & (NBUF-1);
+
+    AJAX("/MOTO?echo.buf%20"+LASTAJ,{
+        noajax:1,
+        error: function(s){ setTimeout("AJME(0)",500); },
+        timeout: 1000,
+        ontimeout: function(s){ setTimeout("AJME(0)",500); },
+        callback: function(x){
+            x=x.replace(/,$/,'');
+            if(x=="") return setTimeout("AJME(0)",500);
+            var o=JSON.parse("["+x+"]");
+
+            var k=0;
+            for(var i in o) {
+                redata(o[i],0); redata(o[i],1); redata(o[i],2);
+                if(WRITEBUF && ARBUF.length <100000) ARBUF.push(o[i][0]);
+            }
+            RGraph.SVG.redraw();
+
+            zabil('A0',o[o.length-1][0]);
+            zabil('FLT',o[o.length-1][1] & 0b11111);
+            zabil('NN',LASTAJ+' / '+o.length);
+            for(var u in pinpin) idd('D'+u).className = ( o[o.length-1][1] & pinpin[u] ? 'e_ledgreen' : 'e_ledred' );
+
+            setTimeout("AJME("+o.length+")",500);
+        }
+    });
+}
+
+function bu(e) { AJAX(e.value); }
+
+function polivpinonoff(i) {
+    AJ("set poliv.pin = {KEY:Settings.txt poliv.pin}"+"\n"+"if.!empty {poliv.pin} {"+"\n"+"pinmode {poliv.pin} OUTPUT"+"\n"+"pin {poliv.pin} "+i+"\n"+"}");
+}
+
+function grafonoff(i) {
+    if(i) {
+	GRAF_ON = 1;
+	STOPALL=0;
+	WRITEBUF=0;
+	ARBUF=[];
+	AJ("MaxA0 = 65535 \n MinA0 = 0 \n set MaxA0.callback =\n set MinA0.callback =\n set FltA0.callback =\n motor-go = 1 \n set.FLT "+getflt()+" \n TIMER.start "+idd('timer_speed').value);
+	AJME(0);
+	salert('Graf Start',500);
+    } else {
+	GRAF_ON = 0;
+	STOPALL=1;
+	WRITEBUF=0;
+	ARBUF=[];
+	AJ("motor-go = 0\n TIMER.stop \n /MOTOR-OFF");
+	salert('Graf Stop',500);
+    }
+}
+
+function getflt(){
+    var x,o=[],p=['FLT_lag','FLT_TOL','FLT_THRESHOLD','FLT_INFLUENCE'];
+    for(var i in p) {
+	x=idd(p[i]); if(!x) { alert('Error 0: '+p[i]); return ""; }
+	x=1*idd(p[i]).value; if(!x) { alert('Error 1: '+p[i]); return ""; }
+	o.push(x);
+    }
+    return o.join(' ');
+}
+
+// ==================================================================
+
+STOPALL=0;
+WRITEBUF=0;
+ARBUF=[];
+STOP1=800;
+STOP2=800;
+HOD1=600;
+HOD2=600;
+
+
+function calibrate(){
+	grafonoff(1);
+	ARBUF=[];
+	STOPALL=1;
+	zabil('buka1','');
+
+	line.originalData[0]=Array.from(Array(300), () => 0);
+	line.originalData[1]=Array.from(Array(300), () => 0);
+	line.originalData[2]=Array.from(Array(300), () => 0);
+	RGraph.SVG.redraw();
+
+    var t=0;
+    buka('init');
+// eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+//AJ("MaxA0 = 65535\nMinA0 = 0\nset MaxA0.callback = \nset MinA0.callback = \nset FltA0.callback = \nmotor-go = 1 \n set.FLT "+getflt()+" \n "+TIMER.start "+idd('timer_speed').value);
+
+    AJ("MinA0 = 0 \n MaxA0 = 1024 \nFltA0 = 0 \n set FLT = "+getflt()+" \n TIMER.start "+idd('timer_speed').value)+" \n set calibrate = 1";
+    salert(idd('timer_speed').value,100);
+
+    // salert("1. начать график и запустить двигатель",1000);
+    t+=1; setTimeout("buka('1.0: график'); STOPALL=0; AJME(0); AJ('/MOTOR-LL');" , t*1000);
+
+    // salert("2. через 5 сек начать запись на 2 секунды, затем запустить двигатель в другую сторону",1000);
+    t+=3; setTimeout(startsave,t*1000); t+=2; setTimeout("calcu(1);AJ('/MOTOR-RR');",t*1000);
+
+    // salert("3. через 2 сек (пусть раскрутится) начать запись на 2 секунды",1000);
+    t+=2; setTimeout(startsave,t*1000); t+=2; setTimeout("calcu(2)",t*1000);
+
+    // salert("4. через 5 сек (пусть снова упрется) начать запись на 2 сек и запустить двигатель обратно",1000);
+    t+=3; setTimeout(startsave,t*1000); t+=2; setTimeout("calcu(3);AJ('/MOTOR-LL');",t*1000);
+
+    // salert("5. через 2 сек начать запись на 2 секунды",1000);
+    t+=2; setTimeout(startsave,t*1000); t+=2; setTimeout("calcu(4)",t*1000);
+
+    // salert("6. через 1 секунду отключить мотор и график",1000);
+    t+=1; setTimeout(function(){
+        buka('STOP');
+        STOPALL=1;
+        AJ("set MOTOROUT = 7 \n /MOTOR-STOP \n TIMER.stop \n set calibrate = 0");
+        calcurez();
+    },t*1000);
+}
+
+function buka(s){ zabil('buka1',vzyal('buka1')+'<br>'+s); }
+
+function startsave() { ARBUF=[]; WRITEBUF=1; }
+
+calcudoc=[];
+
+function cpr(P) { o=''; for(var i=0;i<P[3].length;i++) {
+    var c=P[3][i];
+    if(c==P[2]) c='<font color=red>'+c+'</font>';
+    else if(c==P[1]) c='<font color=blue>'+c+'</font>';
+    o+=c+' ';
+    }
+    return o;
+}
+
+function calcurez(q){ alert('calcurez');
+    o='<p>Заедания:';
+    o+='<br>1: '+calcudoc[1][0]+' ('+calcudoc[1][1]+'...'+calcudoc[1][2]+') :'+cpr(calcudoc[1]);
+    o+='<br>3: '+calcudoc[3][0]+' ('+calcudoc[3][1]+'...'+calcudoc[3][2]+') :'+cpr(calcudoc[3]);
+    o+='<p>Прогоны:';
+    o+='<br>2: '+calcudoc[2][0]+' ('+calcudoc[2][1]+'...'+calcudoc[2][2]+') :'+cpr(calcudoc[2]);
+    o+='<br>4: '+calcudoc[4][0]+' ('+calcudoc[4][1]+'...'+calcudoc[4][2]+') :'+cpr(calcudoc[4]);
+
+    // var M2=Math.min( calcudoc[1][1] , calcudoc[3][1] );
+    var M2=Math.min( calcudoc[1][0] , calcudoc[3][0] );
+    var M1=Math.max( calcudoc[2][2] , calcudoc[4][2] );
+
+    if(M1 > M2) o+="<br><b><font color=red>калибровка не удалась: "+M1+" > "+M2+"</font><b>";
+    else {
+	    var rec=Math.floor( M1+ (M2-M1)*2/3  );
+            o+='<p><b>Рекомендуемый порог между '+M1+' и '+M2+' = '+rec+". Данные записаны в файл /CALIBR</b>";
+            AJ("A0.MAX = "+rec+" \n FILE.save { /CALIBR MinA0 0\nMaxA0 "+rec+"\nFLT "+getflt()+" }",function(x){if(x=='OK') salert("Saved: /CALIBR"); });
+    }
+    buka(o);
+}
+
+function calcu(q){
+        WRITEBUF=0,o='',k=0,min=999999999,max=0;
+        for(var i=0;i<ARBUF.length;i++) { var c=ARBUF[i]; k+=c; o+=c+' '; if(max<c)max=c; if(min>c) min=c;  }
+        var m=Math.floor(k/ARBUF.length);
+        buka('<br>'+o+'<br>итого замеров: '+ARBUF.length+'<br><b>средняя величина: '+m+' (от '+min+' до '+max+')</b><hr>');
+        calcudoc[q]=[m,min,max,ARBUF];
+        return m;
+}
+
+function CH_GM(n,mode,val){
+        if(mode=='MODE') GRAFMODE[n]=val;
+    else if(mode=='MUL') GRAFMODE_MUL[n]=val;
+    else if(mode=='ADD') GRAFMODE_ADD[n]=val;
+    else return;
+    f5_save('a0_'+mode+'_'+n,val);
+}
+
+function CH_setup(){
+    for(var n=0;n<3;n++) { //>
+	var x=f5_read('a0_MODE_'+n); if(!x && x!==0) x=(n?'---':'A0'); idd('GRAFMODE'+n).value=x;
+	var x=f5_read('a0_MUL_'+n);  if(!x && x!==0) x=(n?100:0); idd('GRAFMUL'+n).value=x;
+	var x=f5_read('a0_ADD_'+n);  if(!x && x!==0) x=50+300*n; idd('GRAFADD'+n).value=x;
+    }
+}
+
+
+</script>
+
+</head><body onload='CH_setup(); RG_init();'>
+
+<h1>MONITOR X</h1>
+
+<div id='bukan'></div>
+
+<center>
+<b><span id='datka'>- = -</span></b>
+<p>
+<div class='a0sel' style='background-color:#c00'><select id='GRAFMODE0' onchange="CH_GM(0,'MODE',this.value)">
+<option value='no'>---</option>
+<option value='A0' selected>A0</option>
+<option value='FLT'>FLT</option>
+<option value='num'>num</option>
+<option value='0'>0</option>
+<option value='1'>1</option>
+<option value='2'>2</option>
+<option value='3'>3</option>
+<option value='4'>4</option>
+<option value='5'>5</option>
+<option value='12'>12</option>
+<option value='13'>13</option>
+<option value='14'>14</option>
+<option value='15'>15</option>
+<option value='16'>16</option>
+</select> * <input id='GRAFMUL0' class='a0in' type='text' size='3' value='1' onchange="CH_GM(0,'MUL',this.value)"> + <input id='GRAFADD0' class='a0in' type='text' size='3' value='0' onchange="CH_GM(0,'ADD',this.value)"></div>
+
+ &nbsp; &nbsp;
+
+<div class='a0sel' style='background-color:#00c'><select id='GRAFMODE1' onchange="CH_GM(1,'MODE',this.value)">
+<option value='no'>---</option>
+<option value='A0'>A0</option>
+<option value='FLT'>FLT</option>
+<option value='num'>num</option>
+<option value='0'>0</option>
+<option value='1'>1</option>
+<option value='2'>2</option>
+<option value='3'>3</option>
+<option value='4'>4</option>
+<option value='5'>5</option>
+<option value='12'>12</option>
+<option value='13'>13</option>
+<option value='14'>14</option>
+<option value='15'>15</option>
+<option value='16'>16</option>
+</select> * <input id='GRAFMUL1' class='a0in' type='text' size='3' value='1' onchange="CH_GM(1,'MUL',this.value)"> + <input id='GRAFADD1' class='a0in' type='text' size='3' value='0' onchange="CH_GM(1,'ADD',this.value)"></div>
+
+ &nbsp; &nbsp;
+
+<div class='a0sel' style='background-color:#0c0'><select id='GRAFMODE2' onchange="CH_GM(2,'MODE',this.value)">
+<option value='no' selected>---</option>
+<option value='A0'>A0</option>
+<option value='FLT'>FLT</option>
+<option value='num'>num</option>
+<option value='0'>0</option>
+<option value='1'>1</option>
+<option value='2'>2</option>
+<option value='3'>3</option>
+<option value='4'>4</option>
+<option value='5'>5</option>
+<option value='12'>12</option>
+<option value='13'>13</option>
+<option value='14'>14</option>
+<option value='15'>15</option>
+<option value='16'>16</option>
+</select> * <input id='GRAFMUL2' class='a0in' type='text' size='3' value='1' onchange="CH_GM(2,'MUL',this.value)"> + <input id='GRAFADD2' class='a0in' type='text' size='3' value='0' onchange="CH_GM(2,'ADD',this.value)"></div>
+
+</center>
+
+<center><div style='width:95%;height:400px' id='rg'></div></center>
+
+<center><table cellpadding=0 cellspacing=10 border=1><tr align=center align=left>
+<td width=150>A0 <span id='A0'></span></td>
+<td>0 <i id='D0' class='e_ledyellow'></i></td>
+<td>1 <i id='D1' class='e_ledyellow'></i></td>
+<td>2 <i id='D2' class='e_ledyellow'></i></td>
+<td>3 <i id='D3' class='e_ledyellow'></i></td>
+<td>4 <i id='D4' class='e_ledyellow'></i></td>
+<td>5 <i id='D5' class='e_ledyellow'></i></td>
+<td>12 <i id='D12' class='e_ledyellow'></i></td>
+<td>13 <i id='D13' class='e_ledyellow'></i></td>
+<td>14 <i id='D14' class='e_ledyellow'></i></td>
+<td>15 <i id='D15' class='e_ledyellow'></i></td>
+<td>16 <i id='D16' class='e_ledyellow'></i></td>
+<td width=150>FLT <span id='FLT'></span></td>
+<td width=150>NN <span id='NN'></span></td>
+</tr></table></center>
+
+<center>
+
+FLT_lag:       <input type=text size=5 id="FLT_lag" value='15'>
+FLT_TOL:       <input type=text size=5 id="FLT_TOL" value='64'>
+FLT_THRESHOLD: <input type=text size=5 id="FLT_THRESHOLD" value='6'>
+FLT_INFLUENCE: <input type=text size=5 id="FLT_INFLUENCE" value='1.5'>
+<input type=button value='SET' onclick="AJ('set.FLT '+getflt())">
+
+<select onchange="AJ('set.FLT.TYPE '+this.value)">
+<option value="chuk">chuk</option>
+<option value="mean">mean</option>
+</select>
+
+<p>рисовать график: <input id='GRAFGO' type='checkbox' onchange='grafonoff(this.checked)' checked> таймер <input type=text size=5 id="timer_speed" value='50'> мс (рекомендуется: 25, 50, 100)
+
+<p>ловить световые команды: <input id='GRAFGO' type='checkbox' onchange='LIGHT_FLAG=(this.checked?1:0);'>
+
+<p>
+<input type=button style='padding:10px;' value='POLIV-START' onclick='polivpinonoff(1)'>
+ &nbsp; &nbsp;
+<input type=button style='padding:10px;' value='POLIV-STOP' onclick='polivpinonoff(0)'>
+
+
+<p><input type=button value='/MOTOR-L' onclick='AJ(this.value)'>
+ &nbsp; &nbsp;
+<input type=button value='/MOTOR-OFF' onclick='AJ(this.value)'>
+ &nbsp; &nbsp;
+<input type=button value='/MOTOR-R' onclick='AJ(this.value)'>
+
+<!-- <p><input type=button value='OPEN' onclick='bu(this)'> &nbsp; &nbsp; <input type=button value='/MOTOR-R' onclick='bu(this)'> -->
+<!-- 
+<p>
+ &nbsp; <input type=button value='PRINT' onclick='printmas()'>
+ &nbsp; <input type=button value='PRINT1' onclick='printmas1()'>
+-->
+
+<p><div><input type=button value='C A L I B R A T E' onclick="calibrate()"></div>
+
+<div><textarea rows=5 cols=80 onchange="MO(this.value,function(s){idie(s)})"></textarea> &nbsp; <input type='button' value="DO" onclick="MO(this.closest('DIV').querySelector('TEXTAREA').value,function(s){idie(s)})"></div>
+
+</center>
+
+<div id='buka'></div>
+<div id='buka1' class=r></div>
+
+</body></html>

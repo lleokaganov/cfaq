@@ -1,0 +1,13 @@
+#rul = {IBAN.steering}
+#
+#if {ENCODER} != {ENO} {
+#   ENO = {ENCODER}
+#   mot = {ENCODER}
+#}
+#
+#xg = {millis} - {oldmil}
+#if {xg} > 100 {
+#  oldmil = {millis}
+#  IBAN.send2 {rul} {mot} {led1} {led2}
+#}
+

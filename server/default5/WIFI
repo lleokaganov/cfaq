@@ -1,0 +1,35 @@
+if.WIFI exit
+
+echo Местная сеть WiFi не подключена...
+
+if {UnixTime} < 600 { echo С момента включения прошло всего {UnixTime} секунд из 600...
+
+    if {WIFIMODE} == AP {
+	echo Есть своя точка доступа "{AP_name}" с паролем "{AP_password}", подключений: {softAPgetStationNum} Ждем действий админа в первые 600 секунд.
+	if {softAPgetStationNum} == 0 play Dd
+	else repeat {softAPgetStationNum} play D.
+	exit
+    }
+
+    echo Попробуем разок подключиться к местной сети...
+    /WIFI_STA
+    if.WIFI exit
+
+    echo Не удалось. Ладно, создадим свою точку доступа "{AP_name}" с паролем "{AP_password}"
+    play DDD
+
+    set WIFIMODE = AP
+
+    WIFI.disconnect YES
+    WIFI.APdisconnect YES
+    WIFI.mode AP
+    WIFI.hostname {AP_name}
+    WIFI.AP {AP_name} {AP_password}
+    WIFI.dns
+
+    play c.c.c.c
+    exit
+}
+
+    echo Новая попытка подключиться к местной сети...
+    /WIFI_STA

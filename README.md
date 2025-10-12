@@ -1,2 +1,2 @@
-# cfaq
-ESP12/ESP32 universal framework
+
+Documentation: https://lleo.me/ESP8266/cfaq

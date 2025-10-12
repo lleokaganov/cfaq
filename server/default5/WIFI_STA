@@ -1,0 +1,49 @@
+if.WIFI exit
+
+set TMP = {FILE:/wifi_last.txt}
+set WIFI_login = {PARSE:TMP *\n}
+set WIFI_password = {PARSE:TMP \n*}
+set TMP =
+
+if.empty WIFI_login {
+    echo Файла нет или он пустой? Пляшем с тестовым вайфаем.
+    set WIFI_login = test
+    set WIFI_password = kukukuku
+    FILE.save.text /wifi_last.txt {WIFI_login}\n{WIFI_password}
+}
+
+echo Пробуем соединиться с WIFI login="{WIFI_login}" password="{WIFI_password}"
+
+echo Дисконнект от всех сетей...
+
+    WIFI.disconnect YES
+    WIFI.APdisconnect YES
+    usleep 500
+
+echo Устанавливаем настройки...
+
+    WIFI.autoconnect YES
+    WIFI.autoreconnect YES
+    WIFI.persistent FALSE
+    WIFI.mode STA
+    WIFI.dns NO
+
+echo Начинаем соединение...
+
+    WIFI {WIFI_login} {WIFI_password}
+    WIFI.waitconnect
+
+if.!WIFI {
+    echo Не удалось...
+    play D.R.M.D.RRR.DDD
+    exit
+}
+
+echo Ура! Подключились в итоге к сети {ip_ssid}, http://{ip} или http://{mdns}.local
+playip
+
+#/WIFI_ONSTART
+
+ping http://canada.lleo.me/bot/t.php?id={chip}-{FlashChipId}&soft={soft}&say={URLENCODE:{DeviceName} {VER} соединилась с {ip_ssid} как {ip}}
+
+NTP.update
