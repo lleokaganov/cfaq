@@ -1,0 +1,4 @@
+# stoplist for upgrade
+/stoplist.txt
+/AUTHORIZED.txt
+/SEEDS.txt

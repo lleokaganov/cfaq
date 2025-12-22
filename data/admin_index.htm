@@ -1,0 +1,86 @@
+<!DOCTYPE html><html>
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<script type='text/javascript' language='JavaScript' src='/main.js'></script>
+<link rel="stylesheet" href="sys.css">
+<style>.thmbn,.rth {width: 60px; text-align:center;}</style>
+<title>DEFAULT6WS</title>
+
+<style>
+
+.thmbn,.rth {width: 45px; text-align:center;}
+
+.TitleTEXT {
+font-family: Impact, Charcoal, sans-serif;
+text-shadow: 1px 1px 1px #ff8f00, 3px 3px 1px #ffbf00;
+letter-spacing: 7px;
+color: #C3231E;
+}
+
+.ZON { display: inline-block; border-radius: 100%; border: 3px solid #ccc; }
+
+.rim { font: sans-serif, Impact; color: #C3231E; font-size: 10px; }
+
+@media screen and (max-width: 700px) {
+ .SC {font-size:26px;}
+ .Zdiv { padding: 20px 0 20px 0; }
+ .ZON { font-size: 40px; }
+ .TitleIMG { font-size:4function off(){ AJ("/ZAMOK-CLOSE \n play drm"); }0px; }
+ .TitleTEXT { font-size: 45px; }
+ .ZON { padding: 10px; margin: 15px; }
+ .rim { margin-top: 0px; }
+ .thmbn,.rth {width: 35px;}
+}
+
+@media screen and (min-width: 701px) {
+ .SC {font-size:46px;}
+ .Zdiv { padding: 60px; }
+ .ZON { font-size: 120px; }
+ .TitleIMG { font-size:100px; }
+ .TitleTEXT { font-size: 90px; }
+ .ZON { padding: 20px; margin: 30px; }
+ .rim { margin-top:-5px;}
+ .thmbn,.rth {width: 45px;}
+}
+
+.sc { font-size: 30px; }
+.MH,.MV { display:inline-block; } .MH { transform:scale(-1,1); } .MV { transform:scale(1,-1); }
+</style>
+
+<script>
+function sys_check(){
+ var s=f5_read('LastConsole'); if(s) idd('tarea').value=s;
+ AJ("echo {ESP_TYPE} {soft}",function(s){ zabil('ESPTYPE',s); });
+ askstart();
+}
+</script>
+
+</head><body onload="sys_check()">
+
+<i class='logout e_mob-ball' onclick="logout()"></i>
+<i class='logo'></i>
+
+<p style='font-size:32px;color:#C3231E;' id='ESPTYPE'>ESP32 WebSocket</p>
+
+<center><div class='divta'>
+<span class='ri'><span class='mv' onclick="execute(this.closest('DIV').querySelector('TEXTAREA').value)">DO</span></span>
+<textarea rows=5 class='tat' id='tarea' onchange="f5_save('LastConsole',this.value)"></textarea>
+</div></center>
+
+<div style='margin-top:20px;eeewidth:600px;' class="thmbns us">
+<ins class="thmbn mv0"><div class="rth" alt='/info' onclick='aFlash(this);go(this)'><span class='SC'>&#129518;</span><p class='rim'>Info</div></ins>
+<ins class="thmbn mv0"><div class="rth" onclick='aFlash(this);ESPrestart()'><span class='SC'>&#128244;</span><p class='rim'>Reboot</div></ins>
+<ins class="thmbn mv0"><div class="rth" onclick='aFlash(this);wifiscan()'><span class='SC'>&#128246;</span></i><p class='rim'>WiFi</div></ins>
+<ins class="thmbn mv0"><div class="rth" onclick="getsofts()"><div id='upgrade_id' class='SC in'>&#128693;</div><p class='rim'>Update</p><div class='br' id='firmware'></div></div></ins>
+<ins class="thmbn mv0"><div class="rth" alt='/test.htm' onclick='aFlash(this);go(this)'><span class='SC'>&#127981;</span><p class='rim'>GPIO</div></ins>
+<ins class="thmbn mv0"><div class="rth" alt='/a0m.htm' onclick='aFlash(this);go(this)'><span class='SC'>&#127748;</span><p class='rim'>Monitor</div></ins>
+<ins class="thmbn mv0"><div class="rth" onclick='FM_fileman()'><span class='SC'>&#128190;</span><p class='rim'>Files</div></ins>
+</div>
+
+<div class='br' id='firmware' style='text-align:left;display:inline-block;'></div>
+
+<p class='br'><a href='https://lleo.me/ESP8266/cfaq' target='_blank'>Help</a>
+
+</body></html>

@@ -1,9 +1,5 @@
-#ifndef PLAY_H
-#define PLAY_H
-
+#pragma once
 #include <Arduino.h>
-#include "LOG.h"
-#include "MOTO.h"
 
 #ifdef ESP32
     extern "C" {
@@ -14,5 +10,3 @@
 
 void play(String x);
 void play(String x, byte pin);
-
-#endif

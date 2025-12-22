@@ -1,0 +1,6 @@
+/wifi_last.txt
+/stoplist.txt
+/stopweblist.txt
+web_deprecate.txt
+/SEEDS.txt
+/AUTHORIZED.txt

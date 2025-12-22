@@ -1,5 +1,4 @@
-#ifndef FLT_H
-#define FLT_H
+#pragma once
 
 #define USE_FLT
 
@@ -33,5 +32,3 @@ int FLT_ARIFM(int x);
 // static int get_mean(int* buf, int N);
 // static int get_stdd(int* buf, int mean, int N);
 // static void FLT_push(int x);
-
-#endif // FLT_H

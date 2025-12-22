@@ -1,11 +1,5 @@
-#ifndef TIMER_H
-#define TIMER_H
-
+#pragma once
 #include <Arduino.h>
-
-#include "config.h"
-#include "loopes.h"
-#include "FLT.h"
 
 #include <Ticker.h>  //Ticker Library
 #include <time.h> // дату чтобы конвертировать из UnixTime
@@ -27,7 +21,7 @@ void pinlog_engine(); // процедура таймера-следилки за
 
 extern Ticker timpin;
 
-extern unsigned long UnixTime; // текущее время по Unix
+extern uint64_t UnixTime; // текущее время по Unix
 extern uint16_t NBUF; // максимальный размер буфера должен быть строго кратен степени двойки, напр. 64, 128, 256, 512
 
 extern struct BufLoopes { // шаблон таймера
@@ -35,5 +29,3 @@ extern struct BufLoopes { // шаблон таймера
   uint16_t A0;
 } *Buf;
 extern byte bufn;
-
-#endif // TIMER_H

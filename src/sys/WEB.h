@@ -1,12 +1,7 @@
-#ifndef WEB_H
-#define WEB_H
-
+#pragma once
 #include <Arduino.h>
 
-#include "LOG.h"
-#include "file.h"
 #include "templates.h"
-
 #include "esp_netif.h"
 
 // Внешние переменные, если есть (например, WEB — глобальный сервер)
@@ -16,17 +11,11 @@
     #include <WiFi.h>
     #include <WebServer.h>
     extern WebServer WEB;
-//     #include "SPIFFS.h"
-//     #include <HTTPClient.h>
-//     #include <WiFiClientSecure.h>
 #else
-    // WiFiClient wifiClient;
     #include <ESP8266WiFi.h>
     #include <ESP8266WebServer.h>
     extern ESP8266WebServer WEB( DEFAULTPORT );
-//     #include <ESP8266HTTPClient.h>
 #endif
-
 
 // Прототипы всех функций из WEB.cpp
 String web_find(String &s, String from, String to);
@@ -49,5 +38,3 @@ bool filewebsend(String f);
 bool AD();
 bool AD(bool i);
 void handleFileUpload();
-
-#endif

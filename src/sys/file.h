@@ -11,19 +11,6 @@
 #include "fileget.h"
 #include "wifi.h"
 
-/*
-#include <FS.h>
-#ifdef ESP32
-#include <SPIFFS.h>
-#else
-#include <LittleFS.h>
-#define SPIFFS LittleFS
-#endif
-#include <WiFiClient.h>
-#include <HTTPClient.h>
-#include <MD5Builder.h>
-*/
-
 bool inList(String file, String list);
 
 // Функции работы с файлами

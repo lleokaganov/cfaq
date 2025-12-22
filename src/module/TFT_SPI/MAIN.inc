@@ -1,6 +1,6 @@
 //---------------- TFT SPI
 
-#include "module/TFT_SPI/h.h"
+#include "module/TFT_SPI/h.hpp"
 
 // Создаём указатель на дисплей
 Adafruit_ST7789* tft = nullptr;

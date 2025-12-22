@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "LOG.h"
+#include "main.h"
 
 /*
 #define LOGNAMES_N 9
@@ -23,7 +23,9 @@ String LOG_I_NAME(byte i) {
 byte LOG_NAME_I(String s) {
   for (byte i = 0; i < LOGNAMES_N; i++) {
     if (s == LOGNAMES[i]) return i;
-  } return 0;
+  }
+  ERR("log name "+s);
+  return 0;
 }
 
 void LOGI(byte i, String s, String music) {
@@ -37,6 +39,16 @@ void LOGI(byte i, String s, byte noN) {
     // yield();
     s.replace("\\n", "\n[" + LOGNAMES[i] + "] --> ");
     //   if(s.length() > 3)
+
+    #ifdef USE_WS_CLIENT
+      if
+      ( i!=6 // IECHO
+        && i!=3 // WGET
+        && EchoMOTO.length() && EchoMOTO.length() < 4000) {
+        EchoMOTO += "\n["+String(i)+"] " + s;
+      }
+    #endif
+
     if(!noN) Serial.print("\n");
     Serial.print(s);
   }
@@ -49,7 +61,7 @@ bool LOGLI(byte i) {
 // void LOG(String s) { yield(); s.replace("\n","\\n"); Serial.println("log: --> "+s); }
 String ERR(String s) {
   s.replace("\n", "\\n");
-  LOGI(LOG_PROG, "ERROR: ============> " + s);
+  LOGI(LOG_PROG, "ERROR: " + s);
   return "";
 }
 String ERR(String s, String o) {

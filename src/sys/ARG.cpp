@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include "ARG.h"
+// #include "ARG.h"
+#include "main.h"
 
 uint16_t findkey(String S, String code) { // найти строку по первому слову, вернуть указатель
   int i = ("\n" + S).indexOf("\n" + code + " "); return (i < 0 ? 0xFFFF : i);
@@ -17,13 +18,30 @@ bool PARGB(String s, int i, bool def) {
   return (c.toInt() ? true : false);
 }
 bool PARGB(String s, int i) { return PARGB(s, i, false); }
-String PARG(String s, int n, String sep) { return REPER(ARG(s, n, sep)); }
+
 String PARG(String s, int n) { return PARG(s, n, " "); }
-int PARG0(String s, int n, String sep, int def) { String c = PARG(s, n, sep); if(c=="") return def; return (c.indexOf("{") < 0 ? c.toInt() : def); }
-int PARG0(String s, int n, String sep) { String c = PARG(s, n, sep); return (c.indexOf("{") < 0 ? c.toInt() : 0); }
-int PARG0(String s, int n) { return PARG0(s, n, " "); }
-double DPARG0(String s, int n, String sep) { String c = PARG(s, n, sep); return (c.indexOf("{") < 0 ? c.toDouble() : 0); }
-double DPARG0(String s, int n) { return DPARG0(s, n, " "); }
+String PARG(String s, int n, String sep) { return REPER(ARG(s, n, sep)); }
+String PARG(String s, int n, String sep, String def) { String c=PARG(s,n,sep); return (c!="" ? c : def); }
+
+int PARG0(String s, int n, String sep, int def) {
+  String c = PARG(s, n, sep);
+  if(c=="") return def;
+  if(c.indexOf("{") >= 0) return 0;
+  if(c.startsWith("0x")) return (int) strtol(c.c_str(), NULL, 16);
+  return c.toInt();
+}
+int PARG0(String s, int n) { return PARG0(s, n, " ", 0); }
+int PARG0(String s, int n, String sep) { return PARG0(s, n, sep, 0); }
+
+double DPARG0(String s, int n, String sep, double def) {
+  String c = PARG(s, n, sep);
+  if(c.indexOf("{") >= 0) return 0;
+  if(c.startsWith("0x")) return (double) strtol(c.c_str(), NULL, 16);
+  return c.toDouble();
+}
+double DPARG0(String s, int n) { return DPARG0(s, n, " ", 0); }
+double DPARG0(String s, int n,  String sep) { return DPARG0(s, n, sep, 0); }
+
 
 
 String FARG(String s, String name, String def) {
@@ -111,7 +129,7 @@ bool CFSET(String n, String v) {
       return 1;
     }
   }
-  LOGI(LOG_ERROR, "Error SET: no room"); return 0;
+  LOGI(LOG_ERROR, F("Error SET: no room")); return 0;
 }
 
 String CF(String v, String D) {

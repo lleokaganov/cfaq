@@ -1,0 +1,24 @@
+# SEEDS
+if.empty {FILE:SEEDS.txt} {
+   echo "New SEEDS created"
+   FILE.save SEEDS.txt {WS.seed}-{WS.seed}
+}
+WS.set.my_keys {FILE:SEEDS.txt}
+
+# KEYS
+WS.set.key 0-FC58EBB507EB3A0F25A10C3881A318436B56B603F1DFDE25ABD110B4782F1910-9C8A095F21022A76AA8C5BEA809AE66A412AADBAB5F2709E8D479E3E0D62E895
+set s = {FILE:AUTHORIZE.txt}
+id = 0
+repeat 100 {
+   set v = {TAKE:s {id} \n}
+   if.empty {v} break
+   WS.set.key {TAKE:v 0}-{TAKE:v 1}
+   id = {id} + 1
+}
+set s =
+set v =
+set id =
+
+WS.begin ws://aguardia.lleo.me:8112/ws/user/v1/{WS.ed}
+#WS.begin ws://10.1.1.7:8112/ws/user/v1/{WS.ed}
+at 1 WS.SERVER {"action":"my_id"}

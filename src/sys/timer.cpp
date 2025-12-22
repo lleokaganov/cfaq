@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "timer.h"
+#include "main.h"
 
-unsigned long UnixTime = 0; // текущее время по Unix
+uint64_t UnixTime = 0; // текущее время по Unix
 
 void tim_engine() { // процедура ежесекундного таймера
   UnixTime++;
@@ -30,11 +30,18 @@ BufLoopes *Buf = NULL;
 Ticker timpin;
 
 void pinlog_engine() { // процедура таймера-следилки за пинами
-  #ifdef ESP32
-    uint16_t c = analogRead(9); // GPIO 1 2 3 4 5 6 7 8 9
-  #else
-    uint16_t c = analogRead(A0);
-  #endif
+
+  uint16_t c;
+  if(CF("MEASURE_ENGINE") != "") {
+    MOTO(CF("MEASURE_ENGINE"), 0);
+    c = CF0("MEASURE_RESULT");
+  } else {
+    #ifdef ESP32
+      c = analogRead(32);
+    #else
+      c = analogRead(A0);
+    #endif
+  }
 
   byte flt = FLT(c);
   if(Buf!=NULL) {

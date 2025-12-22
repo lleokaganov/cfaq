@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "FLT.h"
+#include "main.h"
 
 uint16_t MaxA0 = 65535;
 uint16_t MinA0 = 0;

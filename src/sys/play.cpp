@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "play.h"
+#include "main.h"
 
 #ifdef ESP32
     bool pwmChannelUsed[MAX_PWM_CHANNELS] = {false};  // Флаги занятости каналов
@@ -15,7 +15,7 @@
 void play(String x) { String pin = CF("sound.pin"); if(pin != "") play(x, pin.toInt()); }
 
 void play(String x, byte pin) {
-    LOGI(LOG_MAIN, "play: " + String(pin) + " " + x);
+    // LOGI(LOG_MAIN, "play: " + String(pin) + " " + x);
     const String NotaName = "DRMFSLCdrmfslc";
     const float NotaFreq[] = {261.63, 293.67, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.26, 698.46, 783.99, 880.00, 987.77};
 

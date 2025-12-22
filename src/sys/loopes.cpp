@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "loopes.h"
+#include "main.h"
 
 void loop_del(uint8_t cikl) {
   Loopes[cikl].value = 0;

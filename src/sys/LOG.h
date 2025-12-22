@@ -1,9 +1,5 @@
-#ifndef LOG_H
-#define LOG_H
-
+#pragma once
 #include <Arduino.h>
-#include "play.h"
-#include "config.h"
 
 // Количество типов логов
 #define LOGNAMES_N 9
@@ -46,6 +42,3 @@ String LOG(String s);
 String LOG(String s, byte noN);
 
 #define LOG_MAIN 0
-
-
-#endif // LOG_H

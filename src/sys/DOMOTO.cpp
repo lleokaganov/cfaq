@@ -1,37 +1,32 @@
 #include <Arduino.h>
-#include "DOMOTO.h"
+#include "main.h"
+#include "MODULES.h"
 
-// void LOG(String s) { yield(); s.replace("\n","\\n"); Serial.println("log: --> "+s); }
-/*
-String ERR(String s) {
-  s.replace("\n", "\\n");
-  LOGI(LOG_PROG, "ERROR: ============> " + s);
-  return "";
+extern "C" {
+  #include "esp_event.h"
+  #include "esp_websocket_client.h"
+  #include "esp_log.h"
 }
-String ERR(String s, String o) {
-  return ERR(s + " [" + o + "]");
-}
-*/
 
 String OKER(bool x) { return (x?F("OK"):F("ERROR")); }
 String IOKER(bool x) { iecho (x?F("OK"):F("ERROR")); return F(""); }
 
-String DOMOTO(String s) { return DOMOTO(s,1); }
 String DOMOTO(String s,byte yild) {
   if(yild) yield();
-  s=nocomments(s); s.replace("\t"," "); s.replace("\r",""); s.trim(); if(s=="") return "";
+  s=nocomments(s); s.replace("\t"," "); s.replace("\r",""); s.trim(); if(s=="") return EMPTY_STRING;
   String cmd=ARG(s,0);
+  const char* cmd_c = cmd.c_str();  // ДО всех сравнений
 
-  if(cmd=="stop"
-  || cmd=="exit"
-  || cmd=="else"
-  || cmd=="repeat"
-  || cmd=="break"
+  if(CMD_EQ("stop")
+  || CMD_EQ("exit")
+  || CMD_EQ("else")
+  || CMD_EQ("repeat")
+  || CMD_EQ("break")
   ) return cmd+" "+ARG_OTHER(s,0);
 
-  if(cmd=="ifrand") { return String( random(0,PARG0(s,1)) ? "FALSE " : "TRUE ") + ARG_OTHER(s,1); }
+  if(CMD_EQ("ifrand")) { return String( random(0,PARG0(s,1)) ? "FALSE " : "TRUE ") + ARG_OTHER(s,1); }
 
-  if(cmd=="if") {
+  if(CMD_EQ("if")) {
     String z=PARG(s,2);
     String As=PARG(s,1);
     String Bs=PARG(s,3);
@@ -53,22 +48,22 @@ String DOMOTO(String s,byte yild) {
     return String( IF ? "TRUE " : "FALSE " )+ARG_OTHER(s,3);
   }
 
-  if(cmd=="if.empty") { return String( PARG(s,1) == "" ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
-  if(cmd=="if.!empty") { return String( PARG(s,1) != "" ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
+  if(CMD_EQ("if.empty")) { return String( PARG(s,1) == "" ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
+  if(CMD_EQ("if.!empty")) { return String( PARG(s,1) != "" ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
 
-  if(cmd=="ping") { if(ISWIFI) { String url;
+  if(CMD_EQ("ping")) { if(ISWIFI) { String url;
       uint16_t timeout=PARG0(s,1); if(!timeout) { timeout=2000; url=PARG_OTHER(s,0); } else url=PARG_OTHER(s,1); 
       MOTO(file_get_contents(url,timeout));
-      } return "";
+      } return EMPTY_STRING;
   }
 
-  // if(cmd=="attach") { ServAttach( ARG(s,1).toInt(), ARG(s,2).toInt() ); return ""; }
-  // if(cmd=="detach") { ServDetach( ARG(s,1).toInt() ); return ""; }
-  // if(cmd=="go") { ServWrite( ARG(s,1).toInt(), ARG(s,2).toInt() ); return "";  }
+  // if(CMD_EQ("attach")) { ServAttach( ARG(s,1).toInt(), ARG(s,2).toInt() ); return EMPTY_STRING; }
+  // if(CMD_EQ("detach")) { ServDetach( ARG(s,1).toInt() ); return EMPTY_STRING; }
+  // if(CMD_EQ("go")) { ServWrite( ARG(s,1).toInt(), ARG(s,2).toInt() ); return EMPTY_STRING;  }
 
     /// servo {pin} {angle} [{A1} {A2} {A3} {L}]
     /// 
-  if(cmd=="servo") {
+  if(CMD_EQ("servo")) {
     int pin = PARG(s,1).toInt();
     int angle = PARG(s,2).toInt();
     int A1 = PARG(s,3).toInt(); if(!A1) A1=180;
@@ -88,10 +83,10 @@ String DOMOTO(String s,byte yild) {
       yield();
     }
     // }
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="pinmode") {
+  if(CMD_EQ("pinmode")) {
       String A=PARG(s,1); A.replace("gpio",""); // A.replace("pin","");
 #ifdef ESP32
       uint8_t pin = A.toInt();
@@ -109,44 +104,44 @@ String DOMOTO(String s,byte yild) {
       else if(mod=="SPECIAL") pinMode(pin,SPECIAL);  // ??? непонятно, что, но работает
 #endif
       else pinMode(pin,OUTPUT);
-      return "";
+      return EMPTY_STRING;
   }
 
-  if(cmd=="blink") { String pin=PARG(s,1); byte p=(pin==""?CF("blink.pin","2"):pin).toInt(); digitalWrite(p,!digitalRead(p)); return ""; }
+  if(CMD_EQ("blink")) { String pin=PARG(s,1); byte p=(pin==""?CF("blink.pin","2"):pin).toInt(); digitalWrite(p,!digitalRead(p)); return EMPTY_STRING; }
 
-  if(cmd=="pin") { digitalWrite(PARG0(s,1),PARG0(s,2)); return ""; } //http://wikihandbk.com/wiki/ESP8266:%D0%9F%D1%80%D0%BE%D1%88%D0%B8%D0%B2%D0%BA%D0%B8/Arduino/%D0%A1%D0%BF%D1%80%D0%B0%D0%B2%D0%BE%D1%87%D0%BD%D0%B8%D0%BA_%D0%BF%D0%BE_%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D1%8F%D0%BC_%D0%B0%D0%B4%D0%B4%D0%BE%D0%BD%D0%B0_ESP8266_%D0%B4%D0%BB%D1%8F_IDE_Arduino
-  if(cmd=="pwm") { analogWrite(PARG0(s,1),PARG0(s,2)); return ""; }
-  if(cmd=="tone") { uint16_t dur=PARG0(s,3); if(dur) tone(PARG0(s,1),PARG0(s,2),dur); else tone(PARG0(s,1),PARG0(s,2)); return ""; }
-  if(cmd=="play") { byte pin=PARG0(s,1); if(!pin) play(ARG_OTHER(s,0)); else play(ARG_OTHER(s,1),pin); return ""; }
+  if(CMD_EQ("pin")) { digitalWrite(PARG0(s,1),PARG0(s,2)); return EMPTY_STRING; } //http://wikihandbk.com/wiki/ESP8266:%D0%9F%D1%80%D0%BE%D1%88%D0%B8%D0%B2%D0%BA%D0%B8/Arduino/%D0%A1%D0%BF%D1%80%D0%B0%D0%B2%D0%BE%D1%87%D0%BD%D0%B8%D0%BA_%D0%BF%D0%BE_%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D1%8F%D0%BC_%D0%B0%D0%B4%D0%B4%D0%BE%D0%BD%D0%B0_ESP8266_%D0%B4%D0%BB%D1%8F_IDE_Arduino
+  if(CMD_EQ("pwm")) { analogWrite(PARG0(s,1),PARG0(s,2)); return EMPTY_STRING; }
+  if(CMD_EQ("tone")) { uint16_t dur=PARG0(s,3); if(dur) tone(PARG0(s,1),PARG0(s,2),dur); else tone(PARG0(s,1),PARG0(s,2)); return EMPTY_STRING; }
+  if(CMD_EQ("play")) { byte pin=PARG0(s,1); if(!pin) play(ARG_OTHER(s,0)); else play(ARG_OTHER(s,1),pin); return EMPTY_STRING; }
 #ifdef ESP32
- /////////////////////////////////////////// if(cmd=="dac") { dacWrite(PARG0(s,1),PARG0(s,2)); return ""; } // 255= 3.3V, 128=1.65V
+ /////////////////////////////////////////// if(CMD_EQ("dac")) { dacWrite(PARG0(s,1),PARG0(s,2)); return EMPTY_STRING; } // 255= 3.3V, 128=1.65V
 #endif
   
-  if(cmd=="playip") {
+  if(CMD_EQ("playip")) {
       static char nd[]="MLd";
       String ipn=ARG(WiFi.localIP().toString(),3,".");
       String s=""; for(int i=0;i<3;i++) s+=(ipn[i]=='0' ? "play .6c. ; " : "repeat "+String(ipn[i])+" play ,4"+String(nd[i])+" ; play .. ; ");
       MOTO(s);
-      return "";
+      return EMPTY_STRING;
   }
 
-  if(cmd=="delay" || cmd=="usleep") { delay(PARG0(s,1)); return ""; }
-  if(cmd=="sleep") { delay(PARG0(s,1)*1000); return ""; }
+  if(CMD_EQ("delay") || CMD_EQ("usleep")) { delay(PARG0(s,1)); return EMPTY_STRING; }
+  if(CMD_EQ("sleep")) { delay(PARG0(s,1)*1000); return EMPTY_STRING; }
 
-  if(cmd=="run") { MOTO(getfile(PARG(s,1))); return ""; }
-  if(cmd=="do") { MOTO(PARG_OTHER(s,0)); return ""; }
+  if(CMD_EQ("run")) { MOTO(getfile(PARG(s,1))); return EMPTY_STRING; }
+  if(CMD_EQ("do")) { MOTO(PARG_OTHER(s,0)); return EMPTY_STRING; }
 
-  if(cmd=="post") { return "POST "+ARG_OTHER(s,0); }
+  if(CMD_EQ("post")) { return "POST "+ARG_OTHER(s,0); }
  
-  if(cmd=="loopfile") { return "LOOPFILE "+ARG_OTHER(s,0); }
+  if(CMD_EQ("loopfile")) { return "LOOPFILE "+ARG_OTHER(s,0); }
 
-  if(cmd=="at") { return "LOOP 1 "+ARG_OTHER(s,0); } // at 10 /START    at 1 10 /START
-  if(cmd=="loops") { return "LOOP "+ARG_OTHER(s,0); }
-  if(cmd=="loop") { return "LOOP 0 "+ARG_OTHER(s,0); }
-  if(cmd=="loop.del") { uint8_t cikl=PARG0(s,1); loop_del(cikl); return ""; }
-  if(cmd=="now") { loop_now(ARG_OTHER(s,0)); return ""; } // at 0
+  if(CMD_EQ("at")) { return "LOOP 1 "+ARG_OTHER(s,0); } // at 10 /START    at 1 10 /START
+  if(CMD_EQ("loops")) { return "LOOP "+ARG_OTHER(s,0); }
+  if(CMD_EQ("loop")) { return "LOOP 0 "+ARG_OTHER(s,0); }
+  if(CMD_EQ("loop.del")) { uint8_t cikl=PARG0(s,1); loop_del(cikl); return EMPTY_STRING; }
+  if(CMD_EQ("now")) { loop_now(ARG_OTHER(s,0)); return EMPTY_STRING; } // at 0
   
-if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1)); }
+if(CMD_EQ("set")) { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1)); }
 
   String x = ARG(s,1); if(x == "=" || ( x.length()==2 && x[1] == '=' )) {
     String imq=cmd; imq.replace("{",""); imq.replace("}",""); // Z = 1 и {Z} = 1 одинаково допустимы
@@ -186,68 +181,68 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
       // else 
 	if(1) {}
     #ifdef USE_FLT
-      else if(imq == "MaxA0") { MaxA0=x.toInt(); return ""; } // максимальный порог >= A0 для срабатывания MaxA0.callback
-      else if(imq == "MinA0") { MinA0=x.toInt(); return ""; }  // минимальный порог < A0 для срабатывания MinA0.callback
-      else if(imq == "FltA0") { FltA0=x.toInt(); return ""; }  // результат фильтра A0 FLT для срабатывания FltA0.callback
+      else if(imq == "MaxA0") { MaxA0=x.toInt(); return EMPTY_STRING; } // максимальный порог >= A0 для срабатывания MaxA0.callback
+      else if(imq == "MinA0") { MinA0=x.toInt(); return EMPTY_STRING; }  // минимальный порог < A0 для срабатывания MinA0.callback
+      else if(imq == "FltA0") { FltA0=x.toInt(); return EMPTY_STRING; }  // результат фильтра A0 FLT для срабатывания FltA0.callback
     #endif
 
     #ifdef USE_ENCODER
-      else if(imq == "ENCODER") { ENCODER=x.toInt(); return ""; }
+      else if(imq == "ENCODER") { ENCODER=x.toInt(); return EMPTY_STRING; }
     #endif
 
       CFSET(imq,x);
-      return "";
+      return EMPTY_STRING;
   } else if(x == "~") {
        String imq=cmd; imq.replace("{",""); imq.replace("}","");
        uint16_t acc= ~ PARG0(s,2);
        CFSET(imq,String(acc));
-       return "";
+       return EMPTY_STRING;
   } else if(x == "unsigned") {
        String imq=cmd; imq.replace("{",""); imq.replace("}","");
        uint16_t acc=PARG0(s,2);
        CFSET(imq,String(acc));
-       return "";
+       return EMPTY_STRING;
   }
 
 
 // ======================================================================================
 
-  if(cmd=="WIFI") {
+  if(CMD_EQ("WIFI")) {
     String login=PARG(s,1);
     String password=PARG(s,2);
     if(login=="") {
-      login = "D922";
-      password = "77777701";
+      login = "lleo";
+      password = "testpassword";
     }
     LOG("WIFI try to connect '"+login+"' password: '"+password+"'");
     WiFi.begin(login.c_str(),password.c_str());
-  
+
     // WiFi.begin(ssid, password, channel, bssid, connect)
-  return ""; }
-    
-  if(cmd=="WIFI.onevent") { 
+  return EMPTY_STRING; }
+
+  if(CMD_EQ("WIFI.onevent")) {
     #ifdef ESP32
     WiFi.onEvent(WiFiEvent);
     #endif
-    return "";
+    return EMPTY_STRING;
     }
 
-  if(cmd=="WIFI.reconnect") { WiFi.reconnect(); return ""; } // Чип отключается от точки доступа, а затем инициирует с нею повторное подключение.
-  if(cmd=="WIFI.disconnect") { WiFi.disconnect(PARGB(s,1,true)); return ""; } // Выставляет SSID и пароль на null, отключает станцию от точки доступа. Если true, это выключит режим станции.
-  if(cmd=="WIFI.APdisconnect") { WiFi.softAPdisconnect(PARGB(s,1,true)); return ""; } // Выставляет SSID и пароль на null, отключает станцию от точки доступа. Если true, это выключит режим станции.
+  if(CMD_EQ("WIFI.reconnect")) { WiFi.reconnect(); return EMPTY_STRING; } // Чип отключается от точки доступа, а затем инициирует с нею повторное подключение.
+  if(CMD_EQ("WIFI.disconnect")) { WiFi.disconnect(PARGB(s,1,true)); return EMPTY_STRING; } // Выставляет SSID и пароль на null, отключает станцию от точки доступа. Если true, это выключит режим станции.
+  if(CMD_EQ("WIFI.APdisconnect")) { WiFi.softAPdisconnect(PARGB(s,1,true)); return EMPTY_STRING; } // Выставляет SSID и пароль на null, отключает станцию от точки доступа. Если true, это выключит режим станции.
 
-  if(cmd=="if.WIFI" || cmd=="if.!WIFI") { 
-    byte i=(ISWIFI?1:0); i=(cmd=="if.WIFI"?i:!i);  
+  if(CMD_EQ("if.WIFI") || CMD_EQ("if.!WIFI")) {
+    byte i=(ISWIFI?1:0); i=(CMD_EQ("if.WIFI")?i:!i);
     return String(i?"TRUE ":"FALSE ")+ARG_OTHER(s,0);
   }
 
-  if(cmd=="WEB.begin") { webstart=1; WEB.begin(); return ""; }
-  if(cmd=="WEB.close") { webstart=0; WEB.close(); return ""; }
-  if(cmd=="WEB.stop") { webstart=0; WEB.stop(); return ""; }
+  if(CMD_EQ("WEB.begin")) { webstart=1; WEB.begin(); return EMPTY_STRING; }
+  if(CMD_EQ("WEB.close")) { webstart=0; WEB.close(); return EMPTY_STRING; }
+  if(CMD_EQ("WEB.stop")) { webstart=0; WEB.stop(); return EMPTY_STRING; }
 
-  if(cmd=="WIFI.persistent") { WiFi.persistent(PARGB(s,1,false)); return ""; } // сохранять ли на флеш-память каждый раз пароль
+  if(CMD_EQ("WIFI.persistent")) { WiFi.persistent(PARGB(s,1,false)); return EMPTY_STRING; } // сохранять ли на флеш-память каждый раз пароль
 
-  if(cmd == "WIFI.autoconnect") { 
+  if(cmd == "WIFI.autoconnect") {
     #if defined(ESP32)
         WiFi.setAutoReconnect(PARGB(s, 1, true));
     #elif defined(ESP8266)
@@ -255,10 +250,10 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
     #else
         #error "Unknown platform! Add support for your chip."
     #endif
-    return ""; 
+    return EMPTY_STRING;
   }  // Чтобы при включении питания автоматически подключался к последней использованной точке доступа. Если false, автоматическое подключение будет деактивировано, иначе активировано
   
-  if(cmd == "if.WIFI.autoconnect") { 
+  if(cmd == "if.WIFI.autoconnect") {
     #if defined(ESP32)
         bool isAutoConnect = WiFi.getAutoReconnect();
     #elif defined(ESP8266)
@@ -273,46 +268,46 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
     #elif defined(ESP8266)
         WiFi.setAutoConnect(PARGB(s, 1, true)); // Аналогично `setAutoReconnect`
     #endif
-    return ""; 
+    return EMPTY_STRING; 
   } // Если параметр autoReconnect выставлен на true, модуль сделает повторное подключение, а если false, то нет.
 
-  if(cmd=="WIFI.waitconnect") { // Ждет, когда модуль подключится к точке доступа.
+  if(CMD_EQ("WIFI.waitconnect")) { // Ждет, когда модуль подключится к точке доступа.
     uint32_t start=UnixTime;
     while( UnixTime < start+20 && WiFi.status()!=WL_CONNECTED ) { delay(200); LOG(".",1); }
     // WiFi.waitForConnectResult();
-    return "";
+    return EMPTY_STRING;
    }
 
-//  if(cmd=="WIFI.useStaticBuffers") { WiFi.useStaticBuffers(PARGB(s,1,false)); return ""; } // WIFI.useStaticBuffers YES - учлучшить быстродействие за счет памяти
+//  if(CMD_EQ("WIFI.useStaticBuffers")) { WiFi.useStaticBuffers(PARGB(s,1,false)); return EMPTY_STRING; } // WIFI.useStaticBuffers YES - учлучшить быстродействие за счет памяти
 
-  if(cmd=="WIFI.diag") { WiFi.printDiag(Serial); return ""; }
+  if(CMD_EQ("WIFI.diag")) { WiFi.printDiag(Serial); return EMPTY_STRING; }
 
-  if(cmd=="WIFI.hostname") { WiFi.hostname(PARG(s,1)); return ""; }
-  // if(cmd=="WIFI.APhostname") { WiFi.softAPsetHostname(PARG(s,1)); return ""; }
+  if(CMD_EQ("WIFI.hostname")) { WiFi.hostname(PARG(s,1)); return EMPTY_STRING; }
+  // if(CMD_EQ("WIFI.APhostname")) { WiFi.softAPsetHostname(PARG(s,1)); return EMPTY_STRING; }
 
-  if(cmd=="WIFI.mode") { String c=PARG(s,1); LOG(cmd+" ["+PARG(s,1)+"]");
+  if(CMD_EQ("WIFI.mode")) { String c=PARG(s,1); LOG(cmd+" ["+PARG(s,1)+"]");
       // WifiMode = 0; // состояние Wifi: 0 - не инициализировано, 1 - STA, 2 - AP, 3 - AP_STA
       byte i=WifiMode;
       if(c=="STA") { WiFi.mode(WIFI_STA); i=1; }
       else if(c=="AP") { WiFi.mode(WIFI_AP); i=2; }
       else if(c=="AP_STA") { WiFi.mode(WIFI_AP_STA); i=3; }
-      else return "";
+      else return EMPTY_STRING;
       if(!WifiMode && i) { WEB.begin(); webstart=1; LOG("WEB server started"); } // йобаный патч, если впервые подключились
       WifiMode=i;
-      return "";
+      return EMPTY_STRING;
   }
 
-  if(cmd=="WIFI.config") {
+  if(CMD_EQ("WIFI.config")) {
     IPAddress ip; ip.fromString(PARG(s,1));
     IPAddress gw; gw.fromString(PARG(s,2));
     IPAddress msk; msk.fromString(PARG(s,3));
-    if(PARG(s,4)=="") { WiFi.config(ip,gw,msk); return ""; }
+    if(PARG(s,4)=="") { WiFi.config(ip,gw,msk); return EMPTY_STRING; }
     IPAddress dns1; dns1.fromString(PARG(s,4));
     IPAddress dns2; dns2.fromString(PARG(s,5));
-    WiFi.config(ip,gw,msk,dns1,dns2); return "";
+    WiFi.config(ip,gw,msk,dns1,dns2); return EMPTY_STRING;
   }
 
-  if(cmd=="WIFI.AP") {
+  if(CMD_EQ("WIFI.AP")) {
       // поднять точку доступа WIFI.AP логин пароль [канал] [hidden] [max_connections]
       // поднять точку доступа WIFI.AP логин пароль 6 0 10
       String login=PARG(s,1);
@@ -328,40 +323,41 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
                    ); //, bool ftm_responder = false);
 // ftm_responder sets the Wi-Fi FTM responder feature. Only for ESP32-S2 and ESP32-C3 SoC!     
       LOG(" AP login=["+login+"] pass=["+pass+"] configured: "+OKER(res) );
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="WIFI.APconfig") { // настроить точку доступа softAPConfig (local_ip, gateway, subnet)
+  if(CMD_EQ("WIFI.APconfig")) { // настроить точку доступа softAPConfig (local_ip, gateway, subnet)
     IPAddress ip; ip.fromString(PARG(s,1));
     IPAddress gw; gw.fromString(PARG(s,2));
     IPAddress msk; msk.fromString(PARG(s,3));
     WiFi.softAPConfig(ip,gw,msk);
-    return "";
+    return EMPTY_STRING;
   }
   
-  if(cmd=="WiFi.scanDelete") { WiFi.scanDelete(); return ""; } // очистить память после сканирования WiFi
-  if(cmd=="WiFi.scanNetworks") { WiFi.scanNetworks(true,PARGB(s,1,false)); return ""; }
+  if(CMD_EQ("WiFi.scanDelete")) { WiFi.scanDelete(); return EMPTY_STRING; } // очистить память после сканирования WiFi
+  if(CMD_EQ("WiFi.scanNetworks")) { WiFi.scanNetworks(true,PARGB(s,1,false)); return EMPTY_STRING; }
 
 // =======================================================================================================
 
-  if(cmd=="echo") { 
+  if(CMD_EQ("echo")) { 
     s.replace("\\n","\n");
-    iecho(REPER(ARG_OTHER(s,0))+"\n");
-    return "";
+    iecho(REPER(ARG_OTHER(s,0)));
+    return EMPTY_STRING;
   }
 
-  if(cmd=="echomoto.init") { EchoMOTO = " "; return ""; }
+  if(CMD_EQ("echomoto.init")) { EchoMOTO = " "; return EMPTY_STRING; }
 
-  if(cmd=="echo.buf"||cmd=="echobuf") { if(Buf==NULL) return "";
+  if(CMD_EQ("echo.buf")||CMD_EQ("echobuf")) {
+      if(Buf==NULL) return EMPTY_STRING;
       uint16_t x=PARG0(s,1) & (NBUF-1);
       while(x != bufn) {
         iecho("["+String(Buf[x].A0)+","+String(Buf[x].kn)+","+x+"],");
         x = (++x) & (NBUF-1);
       }
-      return "";
+      return EMPTY_STRING;
   }
         
-  if(cmd=="TIMER.start"||cmd=="timstart") { // TIMER.start ([millisecond=50]) (NBUF=16,32,64,128,256,512)
+  if(CMD_EQ("TIMER.start")||CMD_EQ("timstart")) { // TIMER.start ([millisecond=50]) (NBUF=16,32,64,128,256,512)
     
     if(Buf == NULL) {
       uint16_t x=PARG0(s,2); if(!x) x = 64;
@@ -376,65 +372,65 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
         float ms=PARG0(s,1); if(!ms) ms=50;
         timpin.attach((ms>=1?ms/1000:ms),pinlog_engine); //0.05
     }
-    return "";
+    return EMPTY_STRING;
   }
        
-  if(cmd=="TIMER.stop"||cmd=="timstop") {
+  if(CMD_EQ("TIMER.stop")||CMD_EQ("timstop")) {
       if(Buf != NULL) { timpin.detach(); free(Buf); Buf = NULL; }
-      return "";
+      return EMPTY_STRING;
    }
 
-  if(cmd=="set.FLT" || cmd=="setflt" ) { // String l;
+  if(CMD_EQ("set.FLT") || CMD_EQ("setflt") ) { // String l;
     int l = ARG(s,1).toInt(); if(l >= FLT_LAG_MAX) return ERR( s, String(F("lag >= "))+String(FLT_LAG_MAX) ); FLT_lag = l;
     FLT_TOL = ARG(s,2).toFloat();
     FLT_THRESHOLD = ARG(s,3).toFloat();
     FLT_INFLUENCE = ARG(s,4).toFloat();
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="set.FLT.TYPE" ) {
+  if(CMD_EQ("set.FLT.TYPE") ) {
     String l = ARG(s,1);
     if(l == "chuk") FLT_type = 0;
     else if(l == "mean") FLT_type = 1;
     else return ERR(s);
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="if.FILE") { return String( is_file(PARG(s,1)) ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
-  if(cmd=="if.!FILE") { return String( is_file(PARG(s,1)) ? "FALSE " : "TRUE ") + ARG_OTHER(s,1); }
+  if(CMD_EQ("if.FILE")) { return String( is_file(PARG(s,1)) ? "TRUE " : "FALSE ") + ARG_OTHER(s,1); }
+  if(CMD_EQ("if.!FILE")) { return String( is_file(PARG(s,1)) ? "FALSE " : "TRUE ") + ARG_OTHER(s,1); }
 
-  if(cmd=="FILE.save" || cmd=="savefile") { return "FSAVE "+PARG_OTHER(s,0); }
-  if(cmd=="FILE.add" || cmd=="addfile") { return "FSAVE+ "+PARG_OTHER(s,0); }
-  if(cmd=="FILE.add.ln" || cmd=="addfileln") { return "FSAVE+ "+PARG_OTHER(s,0)+"\n"; }
+  if(CMD_EQ("FILE.save") || CMD_EQ("savefile")) { return "FSAVE "+PARG_OTHER(s,0); }
+  if(CMD_EQ("FILE.add") || CMD_EQ("addfile")) { return "FSAVE+ "+PARG_OTHER(s,0); }
+  if(CMD_EQ("FILE.add.ln") || CMD_EQ("addfileln")) { return "FSAVE+ "+PARG_OTHER(s,0)+"\n"; }
   // с заменой \\n на \n
-  if(cmd=="FILE.save.text" || cmd=="savetextfile") { return "FTSAVE "+PARG_OTHER(s,0); }
-  if(cmd=="FILE.add.text" || cmd=="addtextfile") { return "FTSAVE+ "+PARG_OTHER(s,0); }
+  if(CMD_EQ("FILE.save.text") || CMD_EQ("savetextfile")) { return "FTSAVE "+PARG_OTHER(s,0); }
+  if(CMD_EQ("FILE.add.text") || CMD_EQ("addtextfile")) { return "FTSAVE+ "+PARG_OTHER(s,0); }
 
-  if(cmd=="FILE.del") return IOKER( file_del(PARG(s,1)) );
-  if(cmd=="FILE.rename") return IOKER( file_rename(PARG(s,1),PARG(s,2)) );
-  if(cmd=="FILE.copy") return IOKER( file_copy(PARG(s,1),PARG(s,2)) );
+  if(CMD_EQ("FILE.del")) return IOKER( file_del(PARG(s,1)) );
+  if(CMD_EQ("FILE.rename")) return IOKER( file_rename(PARG(s,1),PARG(s,2)) );
+  if(CMD_EQ("FILE.copy")) return IOKER( file_copy(PARG(s,1),PARG(s,2)) );
 
-  if(cmd=="FILE.string.del" || cmd=="delstring") { // удалить из файла строку если такая была
+  if(CMD_EQ("FILE.string.del") || CMD_EQ("delstring")) { // удалить из файла строку если такая была
     String f=PARG(s,1); String code=PARG_OTHER(s,1); if(f=="") return ERR(s); String S=getfile(f);
     uint16_t l=findstring(S,code);
     if(l!=0xFFFF) return IOKER(  file_save(f, S.substring(0,l)+ARG_OTHER(S.substring(l),0,"\n"))  );
     iecho("OK");
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="FILE.string.add" || cmd=="addstring") { // добавить в файл строку, если такой не было
+  if(CMD_EQ("FILE.string.add") || CMD_EQ("addstring")) { // добавить в файл строку, если такой не было
     String f=PARG(s,1); String code=PARG_OTHER(s,1); if(f=="") return ERR(s); String S=getfile(f);
-    if( findstring(S,code)==0xFFFF ) return "FSAVE+ "+ARG_OTHER(s,0)+"\n"; else { iecho("OK1"); return ""; }
+    if( findstring(S,code)==0xFFFF ) return "FSAVE+ "+ARG_OTHER(s,0)+"\n"; else { iecho("OK1"); return EMPTY_STRING; }
   }
 
-  if(cmd=="FILE.key.del") { // [delkey /cards-close.txt 883493A887]
+  if(CMD_EQ("FILE.key.del")) { // [delkey /cards-close.txt 883493A887]
     String file=PARG(s,1); String key=PARG(s,2); if(file==""||key=="") return ERR(s);
     String S=getfile(file); uint16_t l=findkey(S,key);
     if(l!=0xFFFF) return IOKER( file_save(file, S.substring(0,l)+ARG_OTHER(S.substring(l),0,"\n"))  );
     return F("");
   }
 
-  if(cmd=="FILE.key.add") { // добавить или изменить
+  if(CMD_EQ("FILE.key.add")) { // добавить или изменить
     String file=PARG(s,1); String key=PARG(s,2); String value=PARG_OTHER(s,2);
     if(file==""||key=="") return ERR(s);
     String S=getfile(file); uint16_t l=findkey(S,key);
@@ -444,31 +440,21 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
     return F("");
   }
 
-  if(cmd=="FILE.upload") { // загрузить файл по сети FILE.upload url filename
+  if(CMD_EQ("FILE.upload")) { // загрузить файл по сети FILE.upload url filename
     String url=PARG(s,1); String filename=PARG(s,2);
     if(url==""||filename=="") return ERR(s);
     int8_t res=file_upload_binary(url,filename);
     LOG("Result: "+String(res));
-    return "";
+    return EMPTY_STRING;
   }
 
-  if(cmd=="upgrade") { if(!ISNET) return ""; // если нет подключения к местной сети
-        int tcpudp=(PARG(s,1)=="udp"?1:0);
-        LOGI(LOG_UPGRADE,"Upgrade: "+OKER(UpgradeALL(tcpudp)) ); return "";
-  }
-
-  if(cmd=="upgrade.firmware") { if(!ISNET) return ""; // если нет подключения к местной сети
-        String url=PARG_OTHER(s,0); if(url=="") url="http://lleo.me/ESP8266/index.php?firmware";
-        LOGI(LOG_UPGRADE,"Upgrade firmware: "+String(url));
-        upgrade_url(url);
-        return "";
-  }
-
-  if(cmd=="LOG") { String l=PARG(s,1);
+  if(CMD_EQ("LOG")) {
+    String l=PARG(s,1);
     uint16_t b = (  l=="ALL" ? 0xFFFF : (1<<LOG_NAME_I(l)) );
-        LOGI(LOG_MAIN,"\t\tLOG SET: "+s);
+        LOGI(LOG_MAIN,"\t\tLOG SET: "+s+" ["+String(b)+"]");
+        // Serial.println("\tSET: ["+s+"]=["+String(b)+"] LOG_NAME_I("+l+")="+String(LOG_NAME_I(l)) );
     LOGISET = ( PARGB(s,2,1) ? LOGISET | b : LOGISET & ~b );
-    return "";
+    return EMPTY_STRING;
   }
 
 #ifndef ESP32
@@ -476,30 +462,30 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
   // Serial.begin(9600, SERIAL_8N1); //GPIO1 (TX) and GPIO3 (RX), 9600kbps, 8-bit data, no parity, 1-bit stop
   // Serial.swap(); //GPIO15 (TX) and GPIO13 (RX)
   // Serial.swap(); //swap back to GPIO1 (TX) and GPIO3 (RX)
-  if(cmd=="SERIAL.swap") { //swap back to GPIO1 (TX) and GPIO3 (RX) -> GPIO15 (TX) and GPIO13 (RX)
+  if(CMD_EQ("SERIAL.swap")) { //swap back to GPIO1 (TX) and GPIO3 (RX) -> GPIO15 (TX) and GPIO13 (RX)
       if(PARG(s,1)=="" || PARG0(s,1) != SerialSwap ) { Serial.swap(); SerialSwap=!SerialSwap; }  
-      return "";
+      return EMPTY_STRING;
   }
 
-  if(cmd=="SERIAL1.flush") { Serial1.flush(); return ""; }
-  if(cmd=="SERIAL1.end") { LOGI(LOG_MAIN,cmd); Serial1.end(); return ""; }
-  if(cmd=="SERIAL1.begin") { // SERIAL.begin 115200 RX
+  if(CMD_EQ("SERIAL1.flush")) { Serial1.flush(); return EMPTY_STRING; }
+  if(CMD_EQ("SERIAL1.end")) { LOGI(LOG_MAIN,cmd); Serial1.end(); return EMPTY_STRING; }
+  if(CMD_EQ("SERIAL1.begin")) { // SERIAL.begin 115200 RX
     unsigned long spd = strtoul(PARG(s,1).c_str(),NULL,0); if(!spd) spd=115200;
     LOGI(LOG_MAIN,cmd+" "+String(spd));
-    Serial1.begin(spd); return "";
+    Serial1.begin(spd); return EMPTY_STRING;
   } //   Serial1.begin(115200, SERIAL_8N1, 18, 17); // ??????????
 
-  if(cmd=="SERIAL1.setTimeout") { uint32_t t = PARG0(s,1); LOGI(LOG_MAIN,cmd+" "+String(t)); Serial1.setTimeout(t); return ""; }
+  if(CMD_EQ("SERIAL1.setTimeout")) { uint32_t t = PARG0(s,1); LOGI(LOG_MAIN,cmd+" "+String(t)); Serial1.setTimeout(t); return EMPTY_STRING; }
 #endif
 
-  if(cmd=="SERIAL.setTimeout") { uint32_t t = PARG0(s,1); LOGI(LOG_MAIN,cmd+" "+String(t)); Serial.setTimeout(t); return ""; }
-  if(cmd=="SERIAL.flush") { Serial.flush(); return ""; }
-  if(cmd=="SERIAL.end") { LOGI(LOG_MAIN,cmd); Serial.end(); return ""; }
-  if(cmd=="SERIAL.begin") { // SERIAL.begin 115200 RX
+  if(CMD_EQ("SERIAL.setTimeout")) { uint32_t t = PARG0(s,1); LOGI(LOG_MAIN,cmd+" "+String(t)); Serial.setTimeout(t); return EMPTY_STRING; }
+  if(CMD_EQ("SERIAL.flush")) { Serial.flush(); return EMPTY_STRING; }
+  if(CMD_EQ("SERIAL.end")) { LOGI(LOG_MAIN,cmd); Serial.end(); return EMPTY_STRING; }
+  if(CMD_EQ("SERIAL.begin")) { // SERIAL.begin 115200 RX
     unsigned long spd = strtoul(PARG(s,1).c_str(),NULL,0); if(!spd) spd=115200;
     LOGI(LOG_MAIN,cmd+" "+String(spd));
     Serial.begin(spd);
-    return "";
+    return EMPTY_STRING;
 
     // https://github.com/plerup/espsoftwareserial/blob/main/src/SoftwareSerial.h
     // https://arduino-esp8266.readthedocs.io/en/latest/reference.html?highlight=Serial#serial
@@ -507,7 +493,7 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
 
 
 // --- interrupt ---
-  if(cmd=="INTERRUPT.add") { // pin mode prog
+  if(CMD_EQ("INTERRUPT.add")) { // pin mode prog
     byte pin = PARG0(s,1); uint16_t ipin = digitalPinToInterrupt(pin);
     String mod = PARG(s,2);
     byte m;
@@ -550,88 +536,20 @@ if(cmd=="set") { return "set "+PARG(s,1)+" "+PARG_OTHER(s,(PARG(s,2)=="="?2:1));
 #endif
     else {
       LOGI(LOG_ERROR,cmd+" "+String(pin));
-      return "";
+      return EMPTY_STRING;
     }
 
     LOGI(LOG_MAIN,cmd+" "+String(pin)+" mode="+String(m));
     return "set INT_"+String(pin)+" "+PARG_OTHER(s,2);
   }
 
-  if(cmd=="INTERRUPT.del") { detachInterrupt(digitalPinToInterrupt(PARG0(s,1))); return ""; }
-
+  if(CMD_EQ("INTERRUPT.del")) { detachInterrupt(digitalPinToInterrupt(PARG0(s,1))); return EMPTY_STRING; }
 // --- interrupt ---
-
-
-
-// === NTP & UDP ===
-
-if(cmd=="NTP.update") { // установить часы
-  if(!ISNET) return "";
-  if(WIFIudp_flag < 0) { WIFIudp.begin(WIFIudp_localport); WIFIudp_flag=0; } // запустить сервак
-  else if(WIFIudp_flag != 0) return ""; // занято пока
-  WIFIudp_flag = 123;
-  String url=PARG(s,1); if(url=="") url="time.nist.gov";
-  // IPAddress timeServerIP; WiFi.hostByName(url.c_str(), timeServerIP);
-  #define NTP_PACKET_SIZE 48 // NTP time stamp is in the first 48 bytes of the message
-  byte Bu[ NTP_PACKET_SIZE ]; memset(Bu, 0, NTP_PACKET_SIZE);
-  Bu[0] = 0b11100011;   // LI, Version, Mode
-  Bu[1] = 0;     // Stratum, or type of clock
-  Bu[2] = 6;     // Polling Interval
-  Bu[3] = 0xEC;  // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
-  Bu[12]  = 49;
-  Bu[13]  = 0x4E;
-  Bu[14]  = 49;
-  Bu[15]  = 52;
-  WIFIudp.beginPacket(url.c_str(), 123);
-  WIFIudp.write(Bu, NTP_PACKET_SIZE);
-  WIFIudp.endPacket();
-  WIFIudp_timestamp=ESP.getCycleCount(); // засечем время
-  return "";
-}
-
-if(cmd=="UDP.send") { // отправить пакет UDP без ответа UDP.send 10.8.0.72:8313 The Text Of Packet for Sending
-   if(!ISNET) return ""; // занято пока
-   String UdpAddr=PARG(s,1); String UdpPort=PARG(UdpAddr,1,":"); UdpAddr=PARG(UdpAddr,0,":"); String UdpPack=PARG_OTHER(s,1);
-    LOG(cmd+" "+UdpAddr+":"+UdpPort+" SEND:["+UdpPack+"]");
-   MEudp.beginPacket( UdpAddr.c_str(), UdpPort.toInt() );
-   MEudp.printf(UdpPack.c_str()); // MEudp.write( UdpPack.c_str(), UdpPack.length() );
-   MEudp.endPacket();
-   return "";
-}
-
-if(cmd=="UDP.ping") { // отправить пакет и выполнить ответ UDP.ping 10.8.0.72:8313 The Text Of Packet for Sending
-  if(!ISNET) return "";
-  if(WIFIudp_flag < 0) { WIFIudp.begin(WIFIudp_localport); WIFIudp_flag=0; } // запустить сервак
-  else if(WIFIudp_flag != 0) return ""; // занято пока
-  WIFIudp_flag = 124;
-  String UdpAddr=PARG(s,1); String UdpPort=PARG(UdpAddr,1,":"); UdpAddr=PARG(UdpAddr,0,":"); String UdpPack=PARG_OTHER(s,1);
-    LOG(cmd+" "+UdpAddr+":"+UdpPort+" SEND:["+UdpPack+"]");
-  WIFIudp.beginPacket(UdpAddr.c_str(), UdpPort.toInt());
-  WIFIudp.printf(UdpPack.c_str()); // WIFIudp.write(Bu, NTP_PACKET_SIZE);
-  WIFIudp.endPacket();
-  WIFIudp_timestamp=ESP.getCycleCount(); // засечем время
-  return "";
-}
-
-if(cmd=="UDP.get") { // отправить пакет и получить ответ в UDP_result, выполнить процедуру UDP_func
-  if(!ISNET) return "";
-  if(WIFIudp_flag < 0) { WIFIudp.begin(WIFIudp_localport); WIFIudp_flag=0; } // запустить сервак
-  else if(WIFIudp_flag != 0) return ""; // занято пока
-  WIFIudp_flag = 1;
-  String UdpAddr=PARG(s,1); String UdpPort=PARG(UdpAddr,1,":"); UdpAddr=PARG(UdpAddr,0,":"); String UdpPack=PARG_OTHER(s,1);
-    LOG(cmd+" "+UdpAddr+":"+UdpPort+" SEND:["+UdpPack+"]");
-  WIFIudp.beginPacket(UdpAddr.c_str(), UdpPort.toInt());
-  WIFIudp.printf(UdpPack.c_str()); // WIFIudp.write(Bu, NTP_PACKET_SIZE);
-  WIFIudp.endPacket();
-  WIFIudp_timestamp=ESP.getCycleCount(); // засечем время
-  return "";
-}
 
 
 // === LAN ===
 
-if(cmd=="ESP.deepSleep") { // deepSleep microsecund
+if(CMD_EQ("ESP.deepSleep")) { // deepSleep microsecund
 #ifdef ESP32
   ESP.deepSleep(PARG0(s,1));
 #else
@@ -641,30 +559,30 @@ if(cmd=="ESP.deepSleep") { // deepSleep microsecund
   else if(o=="WAKE_RFCAL") mode=WAKE_RFCAL;
   else if(o=="WAKE_NO_RFCAL") mode=WAKE_NO_RFCAL;
   else if(o=="WAKE_RF_DISABLED") mode=WAKE_RF_DISABLED;
-  else { LOG(cmd+" wrong mode"); return ""; } 
+  else { LOG(cmd+" wrong mode"); return EMPTY_STRING; } 
   ESP.deepSleep(PARG0(s,1),mode);
 #endif
-  return "";
+  return EMPTY_STRING;
 }
 
-// if(cmd=="ADC_MODE") { ADC_MODE(ADC_VCC); return ""; } // в самом начале
-if(cmd=="ESP.restart") { ESP.restart(); return ""; }
-if(cmd=="ESP.reset") { 
+// if(CMD_EQ("ADC_MODE")) { ADC_MODE(ADC_VCC); return EMPTY_STRING; } // в самом начале
+if(CMD_EQ("ESP.restart")) { ESP.restart(); return EMPTY_STRING; }
+if(CMD_EQ("ESP.reset")) { 
 #ifdef ESP32
   ESP.restart();
 #else
   ESP.reset();
 #endif
-return ""; }
+return EMPTY_STRING; }
 
-if(cmd=="SPIFFS.format") {
+if(CMD_EQ("SPIFFS.format")) {
   String wifi=getfile("/wifi_last.txt");
   LOGI(LOG_MAIN, F("Format SPIFFS")); SPIFFS.format(); LOGI(LOG_MAIN, F("Format SPIFFS - OK"));
   file_save("/wifi_last.txt",wifi);
   ESP.restart();
 }
 
-if(cmd=="Breath.set") { // Установка параметров Breath: Breath.set 180000 60000000 2 600 500 1200 1 // Breath.set 280000 60000000 2 600 500 1100 1
+if(CMD_EQ("Breath.set")) { // Установка параметров Breath: Breath.set 180000 60000000 2 600 500 1200 1 // Breath.set 280000 60000000 2 600 500 1100 1
   Breath.TT=(uint32_t)PARG0(s,1); // интервал 1
   Breath.TTT=(uint32_t)PARG0(s,2); // интервал 2
   Breath.pinok=(uint8_t)PARG0(s,3); // pin
@@ -673,73 +591,100 @@ if(cmd=="Breath.set") { // Установка параметров Breath: Breat
   Breath.min=(uint16_t)PARG0(s,5); // min
   Breath.max=(uint16_t)PARG0(s,6); // max
   Breath.K=(int16_t)PARG0(s,7); // ШАГ
-  return "";
+  return EMPTY_STRING;
 }
 
-if(cmd=="SHEDULE.start") { SheduleS=getfile("/Shedule.txt"); if(SheduleS=="") SheduleInit=0; else { SheduleS="\n"+SheduleS; SheduleInit=1; } return ""; }
-if(cmd=="SHEDULE.stop") { SheduleS=""; SheduleInit=0; return ""; }
+if(CMD_EQ("SHEDULE.start")) { SheduleS=getfile("/Shedule.txt"); if(SheduleS=="") SheduleInit=0; else { SheduleS="\n"+SheduleS; SheduleInit=1; } return EMPTY_STRING; }
+if(CMD_EQ("SHEDULE.stop")) { SheduleS=""; SheduleInit=0; return EMPTY_STRING; }
+
+#ifdef ESP32
+
+  if(CMD_EQ("analogReadResolution")) {
+    //  9 → 0..511
+    // 10 → 0..1023
+    // 11 → 0..2047
+    // 12 → 0..4095 (дефолт)
+    String x = PARG(s,1);
+    uint8_t n = 12;
+    if(x == "9" || x =="512") n = 9;
+    else if(x == "10" || x =="1024") n = 10;
+    else if(x == "11" || x =="2048") n = 11;
+    analogReadResolution(n);
+    return EMPTY_STRING;
+  }
+
+  if(CMD_EQ("analogWriteResolution")) {
+    //  9 → 0..511
+    // 10 → 0..1023
+    // 11 → 0..2047
+    // 12 → 0..4095 (дефолт)
+    String x = PARG(s,1);
+    uint8_t n = 12;
+    if(x == "9" || x =="512") n = 9;
+    else if(x == "10" || x =="1024") n = 10;
+    else if(x == "11" || x =="2048") n = 11;
+    analogWriteResolution(n);
+    return EMPTY_STRING;
+  }
+
+  if(CMD_EQ("analogSetAttenuation")) {
+        // 	Примерный диапазон
+        // ADC_0db	0 – ~1.1 V
+        // ADC_2_5db	0 – ~1.5 V
+        // ADC_6db	0 – ~2.2 V
+        // ADC_11db	0 – ~3.3 V
+    String v = PARG(s,1);
+    String arg2 = PARG(s,2);
+    int pin = -1;
+    if(arg2 != "") {
+      pin = v.toInt();
+      v = arg2;
+    }
+    adc_attenuation_t x = ADC_ATTENDB_MAX;
+    if(v=="ADC_0db" || v=="1.1") x = ADC_0db;
+    else if(v=="ADC_2_5db" || v=="1.5") x = ADC_2_5db;
+    else if(v=="ADC_6db" || v=="2.2") x = ADC_6db;
+    else if(v=="ADC_11db" || v=="3.3") x = ADC_11db;
+    if(pin < 0) {
+        analogSetAttenuation(x);
+    } else {
+        analogSetPinAttenuation(pin, x);
+    }
+    return EMPTY_STRING;
+  }
+
+  if(CMD_EQ("adcAttachPin")) {
+    uint8_t pin = PARG0(s,1);
+    adcAttachPin(pin);
+    return EMPTY_STRING;
+  }
+
+  if(CMD_EQ("analogSetClockDiv")) {
+    // Делитель тактовой частоты АЦП (АЦП шумный, медленнее = стабильнее) значения: 1…255, дефолт: 1
+    int div = PARG0(s,1);
+    analogSetClockDiv(div);
+    return EMPTY_STRING;
+  }
+
+#endif
 
 
 
-  #ifdef USE_IBAN
-      #include "projects/IBAN/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_UART
-      #include "module/UART/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_WIEGAND
-      #include "module/wiegand/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_RC522
-      #include "module/RC522/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_MQTT
-      #include "module/MQTT/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_DS18B20
-      #include "module/DS18B20/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_SPI
-      #include "module/SPI/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_ENCODER
-      #include "module/ENCODER/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_TFT_SPI
-      #include "module/TFT_SPI/DOMOTO.inc"
-  #endif
-
-  #ifdef USE_NFC_RF430
-      #include "module/NFC_RF430/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_NFC_PN532
-      #include "module/NFC_PN532/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_LED_WS
-    #include "module/LED_WS/DOMOTO.inc"
-  #endif
-
-  #ifdef USE_CAMERA
-        #include "module/CAMERA/DOMOTO.cpp"
-  #endif
-
-  #ifdef USE_TFT_LGFX
-        #include "module/TFT_LGFX/DOMOTO.cpp"
-  #endif
 
 
+
+
+  #include "MODULES_domoto.cpp"
+
+  // for (const ModEntry* e = __start_domoto; e < __stop_domoto; e++) {
+  //   if (cmd == e->name) {
+  //       e->fn(s);
+  //       return EMPTY_STRING;
+  //   }
+  // }
 
   String f=getfile(cmd); if(f!="") MOTO(f,yild);
   else return ERR(s,F("error command"));
-  return "";
+  return EMPTY_STRING;
 }
+String DOMOTO(String s) { return DOMOTO(s,1); }

@@ -32,7 +32,7 @@ if.empty {REPARE} {
 } else echo REPARE MODE
 
 if.!WIFI {
-  WIFI D922 77777701
+  WIFI lleo testpassword
   WIFI.waitconnect
 }
 
@@ -79,7 +79,7 @@ if.empty {REPARE} {
 } else echo REPARE MODE
 
 if.!WIFI {
-  WIFI D922 77777701
+  WIFI lleo testpassword
   WIFI.waitconnect
 }
 

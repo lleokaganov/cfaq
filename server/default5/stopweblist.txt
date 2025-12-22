@@ -1,5 +1,0 @@
-/wifi_last.txt
-/stoplist.txt
-/stopweblist.txt
-/stopspam.txt
-/stopupgrade.txt

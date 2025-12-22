@@ -1,7 +1,12 @@
 #include <Arduino.h>
-#include "REPER.h"
+#include "main.h"
+#include "MODULES.h"
 
 int dBm2percent(int d) { return (d <= -100 ? 0 : (d >= -50 ? 100 : 2*(d+100) )); }
+
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  extern "C" uint8_t temprature_sens_read();
+#endif
 
 String WIFI_all_txt(int n) {
     String S = "";
@@ -31,23 +36,59 @@ String REPERFILE(String url) {
   return REPER(getfile(url));
 }
 
+// String REPER(String s) {
+//   String l, from, to; int a, a2, b, stp = 500;
+//   while ( stp-- ) {
+//     b = s.indexOf("}"); if (b < 0) return s; // ищем первую закрывающую
+//     a = -1; while (1) {
+//       a2 = s.indexOf("{", a + 1);  // ищем ближайшую к ней открывающую
+//       if (a2 < 0 || a2 > b) break;
+//       a = a2;
+//     }
+//     if (a < 0) return s;
+//     l = s.substring(a + 1, b);
+//     s.replace( s.substring(a, b + 1) , ( l.indexOf(":") >= 0 ? REPER_complex(l) : REPER_simplex(l) ) );
+//   }
+//   return s;
+// }
+
+const String SAFE_L = "@\x1C%"; // FS
+const String SAFE_R = "%\x1D@"; // GS
+
 String REPER(String s) {
-  String l, from, to; int a, a2, b, stp = 500;
+  // Serial.println(" [IN:" + s + "]");
+  String l, from, to, fnresult;
+  int a, a2, b, stp = 500;
   while ( stp-- ) {
-    b = s.indexOf("}"); if (b < 0) return s; // ищем первую закрывающую
+    b = s.indexOf("}"); if (b < 0) break; // return s; // ищем первую закрывающую
     a = -1; while (1) {
       a2 = s.indexOf("{", a + 1);  // ищем ближайшую к ней открывающую
       if (a2 < 0 || a2 > b) break;
       a = a2;
     }
-    if (a < 0) return s;
+    if (a < 0) break; // return s;
     l = s.substring(a + 1, b);
-    s.replace( s.substring(a, b + 1) , ( l.indexOf(":") >= 0 ? REPER_complex(l) : REPER_simplex(l) ) );
+    fnresult = ( l.indexOf(":") >= 0 ? REPER_complex(l) : REPER_simplex(l) );
+    if (fnresult == l) fnresult = SAFE_L + l + SAFE_R;
+    s.replace( s.substring(a, b + 1) , fnresult );
   }
+  // Убираем защитные символы
+  s.replace(SAFE_L, "{"); s.replace(SAFE_R, "}");
+  // Serial.println(" [OUT:" + s + "]");
   return s;
 }
 
-String REPER_complex(String l) { // сложная команда
+
+
+
+
+
+
+
+String REPER_complex(String ll) { // сложная команда
+  String l=ll;
+  l.replace(SAFE_L, "{"); l.replace(SAFE_R, "}");
+
   String CMD=ARG(l,0,":"); l=ARG_OTHER(l,0,":");
 
   if(CMD == "chr") { // 123='{' 125='}'
@@ -86,8 +127,17 @@ String REPER_complex(String l) { // сложная команда
 
   if(CMD == "TAKE") {
     String sep = PARG(l, 2);
+    sep.replace("\\n", "\n");
+    // Serial.println("=== TAKE sep=[" + sep + "] ===");
     return PARG( CF(ARG(l, 0)) , PARG0(l, 1) , (sep == "" ? " " : sep) );
   }
+
+  // if(CMD == "TRIM") {
+  //   String s = l;
+  //   while (s.startsWith(" ") || s.startsWith("\n") || s.startsWith("\r")) s = s.substring(1);
+  //   while (s.endsWith(" ") || s.endsWith("\n") || s.endsWith("\r")) s = s.substring(0, s.length() - 1);
+  //   return s;
+  // }
 
   if(CMD == "PARSE") {
     l.replace("|", " ");
@@ -162,46 +212,58 @@ String REPER_complex(String l) { // сложная команда
   }
 
   if (CMD == "URLENCODE") {
-    return urlencode(l);  // NEW
+    return urlencode(l);
   }
 
-  if(CMD == "hh") { return Time_hh( PARG(l, 0).toInt() ); } // NEW
-  if(CMD == "mm") { return Time_mm( PARG(l, 0).toInt() ); } // NEW
-  if(CMD == "ss") { return Time_ss( PARG(l, 0).toInt() ); } // NEW
-  if(CMD == "dn") { return Time_dn( PARG(l, 0).toInt() ); } // день недели 0-6
-  if(CMD == "ddn"){ return Time_ddn( PARG(l, 0).toInt() ); } // дни недели su mo tu we th fr sa
-  if(CMD == "hhmmss") { return Time_hhmmss( PARG(l, 0).toInt() ); } // NEW
-  return "";
+  if (CMD == "HEX") {
+    uint32_t n = (uint32_t)PARG0(l,0);
+    Serial.println("HEX of [" + l + "] 1 = "+ String(n) +" / " + PARG0(l,0));
+    // uint32_t n1 = strtoul(l.c_str(), nullptr, 10);
+    // Serial.println("HEX of [" + l + "] 2 = "+ String(n1) );
+
+    String s;
+    char buf[3];
+    uint8_t *p = (uint8_t*)&n;
+    for (int i = sizeof(n)-1; i >= 0; i--) {
+      sprintf(buf, "%02X ", p[i]);
+      s += buf;
+      if(i) s += ' ';
+    }
+    return s;
+  }
+
+  if(CMD == "hh") { return Time_hh( PARG0(l, 0) ); } // NEW
+  if(CMD == "mm") { return Time_mm( PARG0(l, 0) ); } // NEW
+  if(CMD == "ss") { return Time_ss( PARG0(l, 0) ); } // NEW
+  if(CMD == "dn") { return Time_dn( PARG0(l, 0) ); } // день недели 0-6
+  if(CMD == "ddn"){ return Time_ddn( PARG0(l, 0) ); } // дни недели su mo tu we th fr sa
+  if(CMD == "hhmmss") { return Time_hhmmss( PARG0(l, 0) ); } // NEW
+
+  #include "MODULES_reperX.cpp"
+
+  return ll;
 }
 
 // ==================
 
-String REPER_simplex(String l) {
+String REPER_simplex(String ll) {
+  String l = ll;
+  l.replace(SAFE_L, "{"); l.replace(SAFE_R, "}");
 
-/*  
-#ifndef ESP32
+#ifdef ESP8266
   if (l == F("gpioA0")) return String(analogRead(A0));
 #endif
-  if (l == F("gpio0")) return String(digitalRead(0));
-  if (l == F("gpio1")) return String(digitalRead(1));
-  if (l == F("gpio2")) return String(digitalRead(2));
-  if (l == F("gpio3")) return String(digitalRead(3));
-  if (l == F("gpio4")) return String(digitalRead(4));
-  if (l == F("gpio5")) return String(digitalRead(5));
-  if (l == F("gpio12")) return String(digitalRead(12));
-  if (l == F("gpio13")) return String(digitalRead(13));
-  if (l == F("gpio14")) return String(digitalRead(14));
-  if (l == F("gpio15")) return String(digitalRead(15));
-  if (l == F("gpio16")) return String(digitalRead(16));
-*/
-if(l.startsWith(F("gpioA"))) return String(analogRead( l.substring(5).toInt() ));
+
+#ifdef ESP32
+//   if(l.startsWith(F("gpioRAW"))) return String(analogReadRaw( l.substring(7).toInt() ));
+  if(l.startsWith(F("gpioA"))) return String(analogRead( l.substring(5).toInt() ));
+// if(l.startsWith(F("gpioMV"))) return String(analogReadMilliVolts( l.substring(6).toInt() ));
+#endif
+
 if(l.startsWith(F("gpio"))) return String(digitalRead( l.substring(4).toInt() ));
 
-
-#ifdef hallRead
+#if defined(CONFIG_IDF_TARGET_ESP32)
  if (l == F("hall_sensor")) return String(hallRead()); // показания датчика Холла
-#endif
-#ifdef temprature_sens_read
  if (l == F("temp_sensor")) { return String( (temprature_sens_read()-32) / 1.8 ); } // показания датчика температуры
 #endif
 
@@ -223,26 +285,6 @@ if (l == F("ip_rssi")) return String(WiFi.RSSI()); // ?????????????????
     return (c.indexOf(".") > 0 ? c : WiFi.softAPIP().toString() );
   }
   if (l == F("macAddress")) return WiFi.macAddress();
-
-/*
-  if (l == F("AP_list")) {
-  #ifdef ESP32
-    static wifi_sta_list_t wifi_sta_list;
-    static tcpip_adapter_sta_list_t adapter_sta_list;
-    memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
-    memset(&adapter_sta_list, 0, sizeof(adapter_sta_list));
-    esp_wifi_ap_get_sta_list(&wifi_sta_list);
-    tcpip_adapter_get_sta_list(&wifi_sta_list, &adapter_sta_list);
-    String o=""; for(int i=0; i<adapter_sta_list.num; i++) o+=
-        getBytesMAC(wifi_sta_list.sta[i].mac)+" "
-        +getBytesIP(adapter_sta_list.sta[i].ip)+" "
-        +String(wifi_sta_list.sta[i].rssi)+"\n";
-    return o;
-  #else
-    return "Not supported for ESP8266 yet";
-  #endif
-  }
-*/
 
 if (l == F("AP_list")) {
 #ifdef ESP32
@@ -312,7 +354,7 @@ if (l == F("AP_list")) {
   if (l == F("cycles")) return String(ESP.getCycleCount(), DEC);
 
   if (l == F("flashmode")) { FlashMode_t m = ESP.getFlashChipMode();
-    if(m == FM_QIO) return F("QIO"); 
+    if(m == FM_QIO) return F("QIO");
     if(m == FM_QOUT) return F("QOUT");
     if(m == FM_DIO) return F("DIO");
     if(m == FM_DOUT) return F("DOUT");
@@ -341,7 +383,7 @@ if(l==F("chip")||l==F("getEfuseMac")) return String(ESP.getEfuseMac(), HEX); // 
   // ??? if(l==F("")) return String(ESP.    uint32_t magicFlashChipSpeed(uint8_t byte);
   // ??? if(l==F("")) return String(ESP.    FlashMode_t magicFlashChipMode(uint8_t byte);
 #else
-if (l == F("chip")) return String(ESP.getChipId(), HEX); // c.toUpperCase();
+if (l == F("chip")) return String(ESP.getChipId()); // c.toUpperCase();
   if (l == F("FlashChipId")) { String c = String(ESP.getFlashChipId(), HEX); c.toUpperCase(); return c; }
   if (l == F("FlashChipRealSize")) return String(ESP.getFlashChipRealSize(), DEC);
   if (l == F("CoreVersion")) return ESP.getCoreVersion();
@@ -353,27 +395,27 @@ if (l == F("chip")) return String(ESP.getChipId(), HEX); // c.toUpperCase();
   if (l == F("ResetInfo")) return ESP.getResetInfo();
   if (l == F("vcc")) return String(ESP.getVcc(), DEC);
 #endif
-  if (l == F("Files")) {
-    String o = "";
-    #ifdef ESP32
-      File dir = SPIFFS.open("/"); if(!dir || !dir.isDirectory()) return "";
-      File file;  while( (file = dir.openNextFile()) ){ o += " " + String(file.name()); }
-    #else
-      Dir dir = SPIFFS.openDir(""); while(dir.next()) o+=" "+String(dir.fileName());
-    #endif
-    o.trim();
-    return o;
-  }
-  if (l == F("Files_count")) {
-    int k = 0;
-    #ifdef ESP32
-      File dir = SPIFFS.open("/"); if(!dir || !dir.isDirectory()) return "0";
-      File file; while( (file = dir.openNextFile()) ) k++;
-    #else
-      Dir dir=SPIFFS.openDir(""); while(dir.next()) k++;
-    #endif
-    return String(k);
-  }
+  // if (l == F("Files")) {
+  //   String o = "";
+  //   #ifdef ESP32
+  //     File dir = SPIFFS.open("/"); if(!dir || !dir.isDirectory()) return "";
+  //     File file;  while( (file = dir.openNextFile()) ){ o += " " + String(file.name()); }
+  //   #else
+  //     Dir dir = SPIFFS.openDir(""); while(dir.next()) o+=" "+String(dir.fileName());
+  //   #endif
+  //   o.trim();
+  //   return o;
+  // }
+  // if (l == F("Files_count")) {
+  //   int k = 0;
+  //   #ifdef ESP32
+  //     File dir = SPIFFS.open("/"); if(!dir || !dir.isDirectory()) return "0";
+  //     File file; while( (file = dir.openNextFile()) ) k++;
+  //   #else
+  //     Dir dir=SPIFFS.openDir(""); while(dir.next()) k++;
+  //   #endif
+  //   return String(k);
+  // }
 
 #ifndef ESP32
   if(l==F("SPIFFStotal")) { FSInfo fi; SPIFFS.info(fi); return String(fi.totalBytes); } // size_t-число общего количества Байт размеченных под файловую систему
@@ -493,140 +535,10 @@ if (l == F("chip")) return String(ESP.getChipId(), HEX); // c.toUpperCase();
   if(l == F("WiFi.scanComplete")) { int n = WiFi.scanComplete(); return (n < 0 ? F("wait") : WIFI_all_txt(n) ); } // список сетей завершен?
   if(l == F("WIFI.scan")) { return WIFI_all_txt( WiFi.scanNetworks(0,1) );  } // список сетей
 
+  #include "MODULES_reper.cpp"
 
-    #ifdef USE_UART
-      #include "module/UART/REPER.cpp"
-    #endif
-
-    #ifdef USE_WIEGAND
-      #include "module/wiegand/REPER.cpp"
-    #endif
-
-    #ifdef USE_RC522
-      #include "module/RC522/REPER.cpp"
-    #endif
-
-//    #ifdef USE_SPI
-//      #include "module/wiegand/SPI.cpp" нет такого
-//    #endif
-
-    #ifdef USE_MQTT
-      #include "module/MQTT/REPER.cpp"
-    #endif
-
-    #ifdef USE_DS18B20
-      #include "module/DS18B20/REPER.cpp"
-    #endif
-
-    #ifdef USE_ENCODER
-      #include "module/ENCODER/REPER.cpp"
-    #endif
-
-    #ifdef USE_NFC_RF430
-      #include "module/NFC_RF430/REPER.cpp"
-    #endif
-
-    #ifdef USE_NFC_PN532
-      #include "module/NFC_PN532/REPER.cpp"
-    #endif
-
-    #ifdef USE_RFID2
-      #include "module/RFID2/REPER.cpp"
-    #endif
-
-
-    #ifdef USE_IBAN
-      #include "projects/IBAN/REPER.cpp"
-    #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  if(l == F("MODULES")) {
-    String o="";
-
-    #ifdef USE_UART
-      o+=" UART";
-    #endif
-
-    #ifdef USE_WIEGAND
-      o+=" wiegand";
-    #endif
-
-    #ifdef USE_RC522
-      o+=" RC522";
-    #endif
-
-    #ifdef USE_SPI
-      o+=" SPI";
-    #endif
-
-    #ifdef USE_IBAN
-      o+=" IBAN";
-    #endif
-
-    #ifdef USE_MQTT
-      o+=" MQTT";
-    #endif
-
-    #ifdef USE_FLT
-      o+=" FLT";
-    #endif
-
-    #ifdef USE_DS18B20
-      o+=" DS18B20";
-    #endif
-
-    #ifdef USE_ENCODER
-      o+=" ENCODER";
-    #endif
-
-    #ifdef USE_TFT_SPI
-      o+=" TFT_SPI";
-    #endif
-
-    #ifdef USE_NFC_RF430
-      o+=" NFC_RF430";
-    #endif
-
-    #ifdef USE_LED_WS
-      o+=" LED_WS";
-    #endif
-
-    #ifdef USE_CAMERA
-      o+=" CAMERA";
-    #endif
-
-    #ifdef USE_TFT_LGFX
-      o+=" TFT_LGFX";
-    #endif
-
-    #ifdef USE_NFC_PN532
-      o+=" NFC_PN532";
-    #endif
-
-    #ifdef USE_RFID2
-      o+=" NFC_PN532";
-    #endif
-
-    return o;
-  }
-
-  return CF(l, "");
+  String mark = "\x1C!@#!\x1D";
+  String l2=CF(l,mark);
+  if (l2 != mark) return l2;
+  return ll;
 }

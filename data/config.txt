@@ -1,0 +1,22 @@
+set soft = default6ws # имя софта при апгрейде с сервера-матки, не менять!
+set password = gluki # пароль админа, если он установлен - только админ сможет редактировать этот файл
+
+sound.pin = 16
+pinmode {sound.pin} OUTPUT
+pin {sound.pin} 0
+
+loopfile {
+}
+
+set WIFI.callback = /WIFI.callback
+set WIFI_MY = 1
+set AP_name = 6G-Tower-{chip}
+set AP_password =
+set mdns = {soft}
+
+loop 2 60 /WIFI
+/WIFI
+
+Breath.set 0
+
+/WS

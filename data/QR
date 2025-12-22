@@ -1,0 +1,15 @@
+#tft.clear black
+#tft.font 2 8
+#tft.cursor 0 0
+#tft.color white
+#tft.print T A S H A \n\n H E L L O
+play m
+#echo Привет, Таша! {DateTime}
+tft.clear white
+
+my_id = {WS.SERVER:{"action":"my_id"}}
+
+tft.QR 15 15 7 {my_id}-{WS.x}-{WS.ed}
+echo {my_id}-{WS.x}-{WS.ed}
+
+#/WS

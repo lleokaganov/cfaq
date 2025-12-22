@@ -1,6 +1,3 @@
-#ifndef MAIN_CPP
-#define MAIN_CPP
-
 #include <Arduino.h>
 #include "main.h"
 
@@ -10,73 +7,7 @@ Setting Settes[NSET];
 byte webstart=WEB_START_DEFAULT; // Обслуживать ли веб-сервер
 byte SheduleInit=SHEDULE_START_DEFAULT; // Планировщик запущен
 
-
-    #ifdef USE_ENCODER
-	#include "module/ENCODER/MAIN.cpp"
-    #endif
-
-    #ifdef USE_WIEGAND
-	#include "module/wiegand/MAIN.cpp"
-    #endif
-
-    #ifdef USE_RC522
-	#include "module/RC522/MAIN.cpp"
-    #endif
-
-    #ifdef USE_MQTT
-	#include "module/MQTT/MAIN.cpp"
-    #endif
-
-    #ifdef USE_DS18B20
-	#include "module/DS18B20/MAIN.cpp"
-    #endif
-
-    #ifdef USE_SPI
-	#include "module/SPI/MAIN.inc"
-    #endif
-
-    #ifdef USE_TFT_SPI
-	    #include "module/TFT_SPI/MAIN.inc"
-    #endif
-
-    #ifdef USE_UART
-	#include "module/UART/MAIN.cpp"
-    #endif
-
-    #ifdef USE_NFC_RF430
-	#include "module/NFC_RF430/RF430CL.h"
-	#include "module/NFC_RF430/RF430CL.cpp"
-	#include "module/NFC_RF430/NDEF.h"
-	#include "module/NFC_RF430/NDEF.cpp"
-	#include "module/NFC_RF430/NDEF_TXT.h"
-	#include "module/NFC_RF430/NDEF_TXT.cpp"
-	#include "module/NFC_RF430/NDEF_URI.h"
-	#include "module/NFC_RF430/NDEF_URI.cpp"
-	#include "module/NFC_RF430/MAIN.cpp"
-    #endif
-
-    #ifdef USE_NFC_PN532
-      #include "module/NFC_PN532/MAIN.cpp"
-    #endif
-
-    #ifdef USE_LED_WS
-      #include "module/LED_WS/MAIN.inc"
-    #endif
-
-    #ifdef USE_CAMERA
-	#include "module/CAMERA/MAIN.cpp"
-    #endif
-
-    #ifdef USE_TFT_LGFX
-	#include "module/TFT_LGFX/MAIN.cpp"
-    #endif
-
-// Projects
-
-    #ifdef USE_IBAN
-      #include "projects/IBAN/MAIN.cpp"
-    #endif
-
+#include "MODULES_main.cpp"
 
 byte SerialSwap = 0; // состояние переключения Serial
 
@@ -120,7 +51,7 @@ String EchoMOTO = ""; // строка для вывода инфы в Аякс
 void setup() {
 
   #ifndef ESP32
-    analogWriteResolution(10); // суки, шо ж вы делаете в новом фреймворке бляди такие? Особенно для ESP8266
+    // суки, шо ж вы делаете в новом фреймворке бляди такие? Особенно для ESP8266
   #endif
 
   if(LOGISET & (1 << LOG_MAIN)) Serial.begin(115200); // Serial.begin(921600);
@@ -203,7 +134,7 @@ void setup() {
     else MOTO(DefaultConfig); // запустить основную инициализацию
   }
 
-  // if(CF("password") != "") CFSET("passhash", MD5(REPER(F("{password}/{chip}/{FlashChipId}"))));
+  if(CF("password") != "") CFSET("passhash", MD5(REPER(F("{password}/{chip}/{FlashChipId}"))));
 
   // MOTO("upgrade");
   start_timer(); // запуск таймера
@@ -229,27 +160,7 @@ void loop() {
   // Serial.println("\n\n==== STAGE: "+String(errst++)+" ===="); delay(2);
   // if( (unsigned long)(millis() - MS.millis) > 2000) { }
 
-    #ifdef USE_ENCODER
-      #include "projects/ENCODER/LOOP.cpp"
-    #endif
-
-    #ifdef USE_IBAN
-      #include "projects/IBAN/LOOP.cpp"
-    #endif
-
-    #ifdef USE_MQTT
-      #include "module/MQTT/LOOP.cpp"
-    #endif
-
-    #ifdef USE_NFC_RF430
-      #include "module/NFC_RF430/LOOP.cpp"
-    #endif
-
-    #ifdef USE_CAMERA
-	#ifdef USE_TFT_LGFX
-    	    #include "module/CAMERA/LOOP.cpp"
-	#endif
-    #endif
+  #include "MODULES_loop.cpp"
 
   if(InterruptsFlags) {
       // Serial.println("============> Interrupts: "+String(InterruptsFlags));
@@ -266,18 +177,16 @@ void loop() {
      }
   }
 
-  #ifdef USE_WEB
-    if(webstart) WEB.handleClient();
-  #endif
-
-  String s=CF("MAINLOOP");
-  if(s!="") MOTO(CF("MAINLOOP"), 0);
+ String s=CF("MAINLOOP");
+ if(s!="") MOTO(CF("MAINLOOP"), 0);
 
   if(Breath.TT) breath();
 
   if(SheduleInit) shedule();
 
-  if(WIFIudp_flag>0) WIFIudp_result(); // Если ждем ответа на UDP-запрос
+  #ifdef USE_UDP
+    if(WIFIudp_flag>0) WIFIudp_result(); // Если ждем ответа на UDP-запрос
+  #endif
 
   for (uint8_t i = 0; i < NLOOP; i++) {
       if (Loopes[i].value == 0) continue; // цикл отсутствует
@@ -292,5 +201,3 @@ void loop() {
   }
 
 }
-
-#endif // MAIN_CPP

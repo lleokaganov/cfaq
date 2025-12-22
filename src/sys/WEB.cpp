@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "WEB.h"
+#include "main.h"
 
 #ifdef ESP32
     WebServer WEB ( DEFAULTPORT );
@@ -43,22 +43,9 @@ String web_find(String &s,String from,String to) { int i=0;
 void WEB_MOTO_POST() { if(!AD(1)) return; web_moto(WEB.arg("plain")); }
 
 void WEB_MOTO() {
-  if(!WEB.args() || !AD(1)) return;
-// Serial.println("\n\n============== WEB args="+String(WEB.args()));
-  String s="";
-  // поищем как /MOTO?hash=23421342143324&MOTO=jkdjfkdsjfskjdflksjdfkl
-  // либо просто вся строка остальная /MOTO?hash=23421342143324&set a = 1|echo {a}
-  for(uint8_t i=0;i<WEB.args();i++) {
-// Serial.println(" --> "+String(i)+" ["+WEB.argName(i)+"] + ["+WEB.arg(i)+"]");
-    String nn=String(WEB.argName(i));
-    String vv=String(WEB.arg(i));
-    if(nn=="file"||nn=="MOTO") { s=vv; break; }
-    if(nn=="hash") continue; // hash не считаем
-    s+=nn;
-    if(vv!="") s+="="+vv;
-    if(i < (WEB.args()-1)) s+="&";
-  }
-  s.replace("|","\n");
+  if (!AD(1) || !WEB.hasArg("MOTO") ) return;
+  String s = WEB.arg("MOTO");
+  s.replace("|", "\n");
   web_moto(s);
 }
 
@@ -242,5 +229,3 @@ void handleFileUpload() {
 
  } else { UploadResult="ERROR"; LOGI(LOG_WEB,F("UPLOAD - UNKNOWN")); }
 }
-
-// =======================================================================================

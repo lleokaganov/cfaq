@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include "breath.h"
-#include "wifi.h"
+// #include "breath.h"
+// #include "wifi.h"
+#include "main.h"
 
 BreathStruct Breath = {
   .TT = 180000,

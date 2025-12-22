@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "shedule.h"
+#include "main.h"
 
 String SheduleS="";
 // byte SheduleInit=0;
@@ -7,10 +7,11 @@ String SheduleS="";
 
 void oshedule(String key) {
     int x=SheduleS.indexOf("\n"+key+" ");
-    if(x >= 0) loop_now( ARG(SheduleS.substring(x),0,"\n") );
+    if(x >= 0) loop_now( PARG(SheduleS.substring(x+key.length()+2),0,"\n") );
 }
 
 void shedule(void) {
+  
   static uint32_t OU=0;
   if(UnixTime <= OU) return;
   uint32_t UT=UnixTime; // шоб без сюрпризов

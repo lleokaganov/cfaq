@@ -1,0 +1,16 @@
+tft.begin
+touch.load.calibrate
+
+tft.jpg /lleo2.jpg
+tft.clear silver
+
+tft.color black #white
+tft.font 3
+tft.KEYBOARD
+
+touch.load.calibrate
+
+#tft.jpg lleo2.jpg
+#tft.fillrect 0 340 320 140 silver
+#tft.KEYBOARD
+#tft.fillrect 0 100 320 135 green

@@ -3,3 +3,9 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+commit.sh
+info.sh
+new_firmware.sh
+realsize.sh
+run-clean.sh
+wsuart

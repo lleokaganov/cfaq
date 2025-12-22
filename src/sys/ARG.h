@@ -13,11 +13,13 @@ uint16_t findstring(String S, String code);
 bool PARGB(String s, int i, bool def);
 bool PARGB(String s, int i);
 
+String PARG(String s, int n, String sep, String def);
 String PARG(String s, int n, String sep);
 String PARG(String s, int n);
 int PARG0(String s, int n, String sep, int def);
 int PARG0(String s, int n, String sep);
 int PARG0(String s, int n);
+double DPARG0(String s, int n, String sep, double def);
 double DPARG0(String s, int n, String sep);
 double DPARG0(String s, int n);
 

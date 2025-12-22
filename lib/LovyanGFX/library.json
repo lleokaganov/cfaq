@@ -1,0 +1,20 @@
+{
+  "name": "LovyanGFX",
+  "version": "cut",
+  "build": {
+    "srcDir": "src",
+    "srcFilter": [
+      "+<*>",
+      "-<Fonts/>",
+      "-<utility/lgfx_pngle*>",
+      "-<utility/lgfx_tjpgd*>",
+      "-<utility/lgfx_qoi*>",
+      "-<utility/lgfx_miniz*>",
+      "-<v1/touch/>",
+      "-<v1/platforms/esp8266/>",
+      "-<v1/platforms/*/>",
+      "+<v1/platforms/esp32/>",
+      "+<v1/platforms/arduino_default/>"
+    ]
+  }
+}

@@ -1,6 +1,5 @@
 #include <Arduino.h>
-// #include <MD5Builder.h>
-#include "mainutils.h"
+#include "main.h"
 
 String MD5(String s) {
   MD5Builder md5;
@@ -36,16 +35,16 @@ String FullInfo() {
 
 
 
-void SYSP(String s) {
+void SYSP(String &s) {
   if (CF("sound.pin") != "") DOMOTO("play " + s);
 }
 
 void iecho(String s) {
-  if (EchoMOTO.length() != 0 && (EchoMOTO.length() + s.length()) < 4000) EchoMOTO += s;
+  if (EchoMOTO.length() && (EchoMOTO.length() + s.length() + 1) < ECHOMOTO_MAX) EchoMOTO += s+"\n";
   LOGI(LOG_IECHO, s);
 }
 
-String urlencode(String s) {
+String urlencode(String &s) {
   String o = "";
   char c, c0;
   for (uint16_t i = 0; i < s.length(); i++) {
@@ -68,6 +67,9 @@ String urlencode(String s) {
 
 
 // ====================================================
+String HH(uint8_t x) { String o=String(x<16?"0":"") + String(x, HEX); o.toUpperCase(); return o; }
+String HH0X(uint8_t x) { return String("0x")+HH(x); }
+
 String D00(byte x) { return String(x < 10 ? "0" : "") + String(x); }
 String Time_hh(uint32_t T) { return D00( (((T % 86400L) / 3600 ) + CF("timezone", "+3").toInt() ) % 24 ); }
 String Time_mm(uint32_t T) { return D00( (T % 3600) / 60 ); }

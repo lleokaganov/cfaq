@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "wifi.h"
+#include "main.h"
 
 byte WifiMode = 0; // состояние Wifi: 0 - не инициализировано, 1 - STA, 2 - AP, 3 - AP_STA
 

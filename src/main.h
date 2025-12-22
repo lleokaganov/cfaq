@@ -1,10 +1,8 @@
-#ifndef MAIN_H
-#define MAIN_H
-
+#pragma once
 #include <Arduino.h>
 
-#define VERID "5.57"
-#define VERNAME "HOBOT5"
+#define VERID "6.05"
+#define VERNAME "HOBOT6WS Shedule"
 #define HELP_NET_NAME "ESP-HELP"
 
 #include "config.h"
@@ -14,6 +12,17 @@
 #include "sys/ARG.h"
 #include "sys/MOTO.h"
 #include "sys/REPER.h"
+#include "sys/shedule.h"
+#include "sys/fileget.h"
+#include "sys/file.h"
+#include "sys/FLT.h"
+#include "sys/loopes.h"
+#include "sys/mainutils.h"
+#include "sys/play.h"
+#include "sys/url.h"
+#include "sys/WEB.h"
+#include "sys/wifi.h"
+#include "sys/DOMOTO.h"
 
 #ifdef USE_WEB
   #include "sys/WEB.h"
@@ -122,21 +131,3 @@ void ICACHE_RAM_ATTR INTERRUPT_23();
 void ICACHE_RAM_ATTR INTERRUPT_24();
 void ICACHE_RAM_ATTR INTERRUPT_25();
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif // MAIN_H

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "MOTO.h"
+#include "main.h"
 
 uint16_t jsearch(String S) {
   for (uint16_t zi = 0, i = 0; i < S.length(); i++) {
@@ -162,4 +162,3 @@ String MOTO(String s, byte yild) {
   }
   return "";
 }
-
